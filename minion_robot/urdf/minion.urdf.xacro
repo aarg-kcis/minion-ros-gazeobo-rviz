@@ -1,0 +1,153 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="minion">
+  <material name="blue">
+    <color rgba="0 0 0.8 1"/>
+  </material>
+
+  <material name="green">
+    <color rgba="0 0.8 0 1"/>
+  </material>
+
+  <material name="white">
+    <color rgba="1 1 1 1"/>
+  </material>
+
+  <!-- Constants-->
+  <xacro:property name="chassis_mass"    value="2" />
+  <xacro:property name="chassis_length"  value="0.25" />
+  <xacro:property name="chassis_width"   value="0.2" />
+  <xacro:property name="chassis_height"  value="0.06" />  
+  <xacro:property name="wheel_thickness" value="0.02" />
+  <xacro:property name="wheel_mass"      value="0.1" />
+
+
+
+  <xacro:macro name="wheel_inertia" params="mass">
+      <inertial>
+          <mass value="${mass}" />       
+          <inertia ixx="${mass*(3*wheel_radius*wheel_radius+wheel_thickness*wheel_thickness)/12}" ixy="0.0" ixz="0.0" iyy="${mass*(3*wheel_radius*wheel_radius+wheel_thickness*wheel_thickness)/12}" iyz="0.0" izz="${mass*wheel_radius*wheel_radius/2}"/>
+      </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="wheel_link" params="id radius thickness color mass">
+    <link name="${id}">
+      <visual>
+        <geometry>
+          <cylinder length="${thickness}" radius="${radius}"/>
+        </geometry>
+        <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
+      </visual>
+      <material name="${color}"/>
+      <collision>
+        <geometry>
+          <cylinder length="${thickness}" radius="${radius}"/>
+        </geometry>
+        <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
+      </collision>
+      <xacro:wheel_inertia mass="${wheel_mass}"/>
+    </link>  
+    <gazebo reference="${id}">
+      <mu1 value="200"/>
+      <mu2 value="200"/>
+      <kp value="10000000.0" />
+      <kd value="1.0" />
+      <material>Gazebo/Grey</material>
+    </gazebo>    
+  </xacro:macro>
+
+  <xacro:macro name="wheel_joint" params="id child x y z">
+   <joint name="${id}" type="continuous">
+     <parent link="base_link"/>
+     <child link="${child}"/>
+     <origin xyz="${x} ${y} ${z}"/>
+     <axis xyz="0 1 0"/>
+     <!--limit effort="0.13" velocity="621"/-->
+     <!--safety_controller k_velocity="0.0002"/-->
+   </joint>
+  </xacro:macro>
+
+ <xacro:macro name="wheel_joint_transmission" params="id">
+  <transmission name="${id}_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <actuator name="${id}_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+    <joint name="${id}">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+  </transmission>
+  </xacro:macro>  
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+      </geometry>
+      <material name="blue"/>
+      <origin xyz="0 0 ${joint_height}"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+      </geometry>
+      <origin xyz="0 0 ${joint_height}"/>
+    </collision>       
+    <inertial>
+      <mass value="${chassis_mass}"/>
+      <inertia ixx="${chassis_mass*chassis_width*chassis_width/12+chassis_mass*chassis_height*chassis_height/12}" ixy="0.0" ixz="0.0" 
+        iyy="${chassis_mass*chassis_length*chassis_length/12+chassis_mass*chassis_height*chassis_height/12}" iyz="0.0" 
+        izz="${chassis_mass*chassis_length*chassis_length/12+chassis_mass*chassis_width*chassis_width/12}"/>
+    </inertial>   
+  </link>
+
+  <link name="castor">
+    <visual>
+      <geometry>
+        <sphere radius="${wheel_radius}"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="${wheel_radius}"/>
+      </geometry>      
+    </collision>
+    <gazebo reference="castor">
+      <slip1 value="1"/>
+      <slip2 value="1"/>  
+      <kp value="10000000.0" />
+      <kd value="1.0" />
+      <material>Gazebo/Grey</material>
+    </gazebo>      
+  </link>
+  <joint name="base_castor" type="fixed">
+     <parent link="base_link"/>
+     <child link="castor"/>
+     <origin xyz="${chassis_length/2-wheel_radius} 0 ${joint_height}"/>        
+  </joint>
+  
+  <!-- More Constants -->
+  <xacro:property name="lwid" value="left_wheel"/>
+  <xacro:property name="rwid" value="right_wheel"/>
+  <xacro:property name="ID" value="0"/>
+  <xacro:property name="wheel_radius" value="0.035"/>
+  <xacro:property name="joint_height" value="0.025"/>
+
+  <!--Left Side-->
+  <xacro:wheel_link id="${lwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="white" mass="${wheel_mass}"/>
+  <xacro:wheel_joint id="blw_${ID+1}" child="${lwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${chassis_width/2+0.01}" z="${joint_height}"/>
+  <xacro:wheel_joint_transmission id="blw_${ID+1}"/>
+
+  
+  <!--Right Side-->
+  <xacro:wheel_link id="${rwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="white" mass="${wheel_mass}"/>
+  <xacro:wheel_joint id="brw_${ID+1}" child="${rwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${-chassis_width/2-0.01}" z="${joint_height}"/>    
+  <xacro:wheel_joint_transmission id="brw_${ID+1}"/>
+
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+    </plugin>
+  </gazebo>
+    
+</robot>
