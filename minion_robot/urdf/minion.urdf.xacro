@@ -52,6 +52,7 @@
       <kp value="10000000.0" />
       <kd value="1.0" />
       <material>Gazebo/Grey</material>
+
     </gazebo>    
   </xacro:macro>
 
@@ -134,20 +135,57 @@
   <xacro:property name="joint_height" value="0.025"/>
 
   <!--Left Side-->
-  <xacro:wheel_link id="${lwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="white" mass="${wheel_mass}"/>
+  <xacro:wheel_link id="${lwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
   <xacro:wheel_joint id="blw_${ID+1}" child="${lwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${chassis_width/2+0.01}" z="${joint_height}"/>
   <xacro:wheel_joint_transmission id="blw_${ID+1}"/>
 
   
   <!--Right Side-->
-  <xacro:wheel_link id="${rwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="white" mass="${wheel_mass}"/>
+  <xacro:wheel_link id="${rwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
   <xacro:wheel_joint id="brw_${ID+1}" child="${rwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${-chassis_width/2-0.01}" z="${joint_height}"/>    
   <xacro:wheel_joint_transmission id="brw_${ID+1}"/>
 
   <gazebo>
-    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+<!--     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
       <robotNamespace>/</robotNamespace>
+    </plugin> -->
+    <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+     <alwaysOn>true</alwaysOn>
+     <updateRate>20</updateRate>
+     <leftJoint>blw_1</leftJoint>
+     <rightJoint>brw_1</rightJoint>
+     <wheelSeparation>0.2</wheelSeparation>
+     <wheelDiameter>0.07</wheelDiameter>
+     <torque>1.4</torque>
+     <commandTopic>cmd_vel</commandTopic>
+     <odometryTopic>odom</odometryTopic>
+     <odometryFrame>odom</odometryFrame>
+     <robotBaseFrame>base_footprint</robotBaseFrame>
+     <legacyMode>False</legacyMode>
+     </plugin>
+     <plugin name="actuator_plugin_1" filename="libminion_actuator.so">
+      <actuator>
+        <name>actuator_let</name> <!-- optional -->
+        <joint>blw_1</joint> <!-- name of joint to actuate -->
+        <index>0</index> <!-- needed for multi-DOF joints -->
+        <type>electric_motor</type> <!-- motor model type -->
+        <power>5</power> <!-- parameters for motor model -->
+        <max_velocity>15.7</max_velocity>
+        <max_torque>1.4</max_torque>
+      </actuator>
     </plugin>
+     <plugin name="actuator_plugin_2" filename="libminion_actuator.so">
+      <actuator>
+        <name>actuator_right</name> <!-- optional -->
+        <joint>brw_1</joint> <!-- name of joint to actuate -->
+        <index>0</index> <!-- needed for multi-DOF joints -->
+        <type>electric_motor</type> <!-- motor model type -->
+        <power>5</power> <!-- parameters for motor model -->
+        <max_velocity>15.7</max_velocity>
+        <max_torque>1.4</max_torque>
+      </actuator>
+    </plugin>    
+
   </gazebo>
-    
+
 </robot>
