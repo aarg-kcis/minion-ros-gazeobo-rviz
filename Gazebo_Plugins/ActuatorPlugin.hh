@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2015 Open Source Robotics Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
-*/
-
 #ifndef GAZEBO_PLUGINS_ACTUATORPLUGIN_
 #define GAZEBO_PLUGINS_ACTUATORPLUGIN_
 
@@ -24,33 +7,6 @@
 #include <gazebo/common/Events.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/gazebo.hh>
-
-/// Example SDF:
-// /       <plugin name="actuator_plugin" filename="libActuatorPlugin.so">
-// /        <actuator>
-// /          <name>actuator_0</name> <!-- optional -->
-// /          <joint>JOINT_0</joint> <!-- name of joint to actuate -->
-// /          <index>0</index> <!-- needed for multi-DOF joints -->
-// /          <type>electric_motor</type> <!-- motor model type -->
-// /          <power>20</power> <!-- parameters for motor model -->
-// /          <max_velocity>6</max_velocity>
-// /          <max_torque>10.0</max_torque>
-// /        </actuator>
-// /      </plugin>
-// /    </model>
-///
-/// Required fields:
-/// - name
-/// - joint
-/// - index (can be 0 in most cases)
-/// - type: current options are electric_motor, velocity_limiter or null
-/// Required for motor model electric_motor:
-/// - power
-/// - max_velocity
-/// - max_torque
-/// Required for motor model velocity_limiter:
-/// - max_velocity
-/// - max_torque
 
 namespace gazebo
 {
