@@ -16,7 +16,11 @@
   <xacro:property name="chassis_mass"    value="2" />
   <xacro:property name="chassis_length"  value="0.25" />
   <xacro:property name="chassis_width"   value="0.2" />
-  <xacro:property name="chassis_height"  value="0.06" />  
+  <xacro:property name="chassis_height"  value="0.06" />
+  <xacro:property name="battery_mass"    value="0.2" />
+  <xacro:property name="battery_length"  value="0.05" />
+  <xacro:property name="battery_width"   value="0.2" />  
+  <xacro:property name="battery_height"  value="0.05" />  
   <xacro:property name="wheel_thickness" value="0.02" />
   <xacro:property name="wheel_mass"      value="0.1" />
 
@@ -55,6 +59,7 @@
 
     </gazebo>    
   </xacro:macro>
+ 
 
   <xacro:macro name="wheel_joint" params="id child x y z">
    <joint name="${id}" type="continuous">
@@ -100,6 +105,36 @@
         izz="${chassis_mass*chassis_length*chassis_length/12+chassis_mass*chassis_width*chassis_width/12}"/>
     </inertial>   
   </link>
+
+ <!-- <link name="battery_link">
+    <visual>
+      <geometry>
+        <box size="${battery_length} ${battery_width} ${battery_height}"/>
+      </geometry>
+      <origin xyz="0 0 0"/>
+    </visual>  
+    <collision>
+      <geometry>
+        <box size="${battery_length} ${battery_width} ${battery_height}"/>
+      </geometry>
+      <origin xyz="0 0 0"/>
+    </collision>   
+    <inertial>
+      <mass value="${battery_mass}"/>
+      <inertia ixx="${battery_mass*battery_width*battery_width/12+battery_mass*battery_height*battery_height/12}" ixy="0.0" ixz="0.0" 
+        iyy="${battery_mass*battery_length*battery_length/12+battery_mass*battery_height*battery_height/12}" iyz="0.0" 
+        izz="${battery_mass*battery_length*battery_length/12+battery_mass*battery_width*battery_width/12}"/>
+    </inertial>          
+    <battery name="linear_battery">
+       <voltage>12.592</voltage>
+    </battery>
+ </link>
+
+ <joint name="battery_base" type="fixed">
+   <parent link="base_link"/>
+   <child link="battery_link"/>
+   <origin xyz="0 0 ${joint_height}"/>
+ </joint>  -->
 
   <link name="castor">
     <visual>
@@ -161,7 +196,7 @@
      <odometryTopic>odom</odometryTopic>
      <odometryFrame>odom</odometryFrame>
      <robotBaseFrame>base_footprint</robotBaseFrame>
-     <legacyMode>False</legacyMode>
+     <legacyMode>False</legacyMode>     
      </plugin>
      <plugin name="actuator_plugin_1" filename="libminion_actuator.so">
       <actuator>
@@ -185,6 +220,23 @@
         <max_torque>1.4</max_torque>
       </actuator>
     </plugin>    
+<!--     <plugin name="battery" filename="libminion_battery.so">
+        <ros_node>battery_monitor_client</ros_node>
+        <link_name>battery_link</link_name>
+        <battery_name>linear_battery</battery_name>
+        <constant_coef>12.694</constant_coef>
+        <linear_coef>-100.1424</linear_coef>
+        <initial_charge>1.1665</initial_charge>
+        <capacity>1.2009</capacity>
+        <resistance>0.061523</resistance>
+        <smooth_current_tau>1.9499</smooth_current_tau>
+        <charge_rate>0.2</charge_rate>
+    </plugin>
+    <plugin name="consumer" filename="libminion_battery_consumer.so">
+        <link_name>battery_link</link_name>
+        <battery_name>linear_battery</battery_name>
+        <power_load>6.6</power_load>
+    </plugin>     -->
 
   </gazebo>
 
