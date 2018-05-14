@@ -15,7 +15,7 @@ cd build
 cmake ../
 make
 ```
-# Open 3 terminals
+# Open 2 terminals
 First terminal: 
 ```bash
 cd catkin_ws/src/minion_robot/scripts
