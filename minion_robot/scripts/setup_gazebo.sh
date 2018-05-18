@@ -31,7 +31,7 @@ date
 
 for i in $(seq 0 $(($ROBOS-1))); do
   id=$(($i+1))
-  roslaunch minion_robot minion_with_ID.launch roboID:=$id z:=0 x:=${Xs[$i]}  y:=${Ys[$i]} --screen &
+  roslaunch minion_robot minion_with_ID.launch roboID:=$id z:=0.1 x:=${Xs[$i]}  y:=${Ys[$i]} --screen &
   sleep 5
   #roslaunch minion_robot minion_nodes.launch --screen &
 

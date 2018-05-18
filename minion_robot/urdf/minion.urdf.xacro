@@ -70,7 +70,7 @@
 
   <xacro:macro name="wheel_joint" params="id child x y z">
    <joint name="${id}" type="continuous">
-     <parent link="${namespace}/base_link"/>
+     <parent link="base_link"/>
      <child link="${child}"/>
      <origin xyz="${x} ${y} ${z}"/>
      <axis xyz="0 1 0"/>
@@ -91,7 +91,7 @@
   </transmission>
   </xacro:macro>
 
-  <link name="${namespace}/base_link">
+  <link name="base_link">
     <visual>
       <geometry>
         <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
@@ -113,7 +113,7 @@
     </inertial>
   </link>
 
-   <link name="${namespace}/castor">
+   <link name="castor">
     <visual>
       <geometry>
         <sphere radius="${wheel_radius}"/>
@@ -133,82 +133,93 @@
       <material>Gazebo/Grey</material>
     </gazebo>
   </link>
-  <joint name="${namespace}/base_castor" type="fixed">
-     <parent link="${namespace}/base_link"/>
-     <child link="${namespace}/castor"/>
+  <joint name="base_castor" type="fixed">
+     <parent link="base_link"/>
+     <child link="castor"/>
      <origin xyz="${chassis_length/2-wheel_radius} 0 ${joint_height}"/>
   </joint>
 
   <!--Left Side-->
-  <xacro:wheel_link id="${namespace}/${lwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
-  <xacro:wheel_joint id="${namespace}/blw_${ID+1}" child="${namespace}/${lwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${chassis_width/2+0.01}" z="${joint_height}"/>
-  <xacro:wheel_joint_transmission id="${namespace}/blw_${ID+1}"/>
+  <xacro:wheel_link id="${lwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
+  <xacro:wheel_joint id="blw_${ID+1}" child="${lwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${chassis_width/2+0.01}" z="${joint_height}"/>
+  <xacro:wheel_joint_transmission id="blw_${ID+1}"/>
 
 
   <!--Right Side-->
-  <xacro:wheel_link id="${namespace}/${rwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
-  <xacro:wheel_joint id="${namespace}/brw_${ID+1}" child="${namespace}/${rwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${-chassis_width/2-0.01}" z="${joint_height}"/>
-  <xacro:wheel_joint_transmission id="${namespace}/brw_${ID+1}"/>
+  <xacro:wheel_link id="${rwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
+  <xacro:wheel_joint id="brw_${ID+1}" child="${rwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${-chassis_width/2-0.01}" z="${joint_height}"/>
+  <xacro:wheel_joint_transmission id="brw_${ID+1}"/>
 
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <robotNamespace>/</robotNamespace>
+      <robotNamespace>/${namespace}/diff_drive_controller</robotNamespace>
     </plugin>
-    <!-- <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
-     <alwaysOn>true</alwaysOn>
-     <updateRate>10</updateRate>
-     <leftJoint>blw_1</leftJoint>
-     <rightJoint>brw_1</rightJoint>
-     <wheelSeparation>0.2</wheelSeparation>
-     <wheelDiameter>0.07</wheelDiameter>
-     <torque>1.4</torque>
-     <commandTopic>cmd_vel</commandTopic>
-     <odometryTopic>odom</odometryTopic>
-     <odometryFrame>odom</odometryFrame>
-     <robotBaseFrame>base_footprint</robotBaseFrame>
-     <legacyMode>False</legacyMode>
-     </plugin> -->
-
-<!--      <plugin name="actuator_plugin_1" filename="libminion_actuator.so">
-      <actuator>
-        <name>actuator_left</name>
-        <joint>blw_1</joint>
-        <index>0</index>
-        <type>electric_motor</type>
-        <power>5</power>
-        <max_velocity>15.7</max_velocity>
-        <max_torque>1.4</max_torque>
-      </actuator>
-    </plugin> -->
-<!--      <plugin name="actuator_plugin_2" filename="libminion_actuator.so">
-      <actuator>
-        <name>actuator_right</name>
-        <joint>brw_1</joint>
-        <index>0</index>
-        <type>electric_motor</type>
-        <power>5</power>
-        <max_velocity>15.7</max_velocity>
-        <max_torque>1.4</max_torque>
-      </actuator>
-    </plugin>     -->
-<!--     <plugin name="battery" filename="libminion_battery.so">
-        <ros_node>battery_monitor_client</ros_node>
-        <link_name>battery_link</link_name>
-        <battery_name>linear_battery</battery_name>
-        <constant_coef>12.694</constant_coef>
-        <linear_coef>-100.1424</linear_coef>
-        <initial_charge>1.1665</initial_charge>
-        <capacity>1.2009</capacity>
-        <resistance>0.061523</resistance>
-        <smooth_current_tau>1.9499</smooth_current_tau>
-        <charge_rate>0.2</charge_rate>
-    </plugin>
-    <plugin name="consumer" filename="libminion_battery_consumer.so">
-        <link_name>battery_link</link_name>
-        <battery_name>linear_battery</battery_name>
-        <power_load>6.6</power_load>
-    </plugin>     -->
-
   </gazebo>
 
 </robot>
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+ <alwaysOn>true</alwaysOn>
+ <updateRate>10</updateRate>
+ <leftJoint>blw_1</leftJoint>
+ <rightJoint>brw_1</rightJoint>
+ <wheelSeparation>0.2</wheelSeparation>
+ <wheelDiameter>0.07</wheelDiameter>
+ <torque>1.4</torque>
+ <commandTopic>cmd_vel</commandTopic>
+ <odometryTopic>odom</odometryTopic>
+ <odometryFrame>odom</odometryFrame>
+ <robotBaseFrame>base_footprint</robotBaseFrame>
+ <legacyMode>False</legacyMode>
+ </plugin> -->
+
+<!--      <plugin name="actuator_plugin_1" filename="libminion_actuator.so">
+  <actuator>
+    <name>actuator_left</name>
+    <joint>blw_1</joint>
+    <index>0</index>
+    <type>electric_motor</type>
+    <power>5</power>
+    <max_velocity>15.7</max_velocity>
+    <max_torque>1.4</max_torque>
+  </actuator>
+</plugin> -->
+<!--      <plugin name="actuator_plugin_2" filename="libminion_actuator.so">
+  <actuator>
+    <name>actuator_right</name>
+    <joint>brw_1</joint>
+    <index>0</index>
+    <type>electric_motor</type>
+    <power>5</power>
+    <max_velocity>15.7</max_velocity>
+    <max_torque>1.4</max_torque>
+  </actuator>
+</plugin>     -->
+<!--     <plugin name="battery" filename="libminion_battery.so">
+    <ros_node>battery_monitor_client</ros_node>
+    <link_name>battery_link</link_name>
+    <battery_name>linear_battery</battery_name>
+    <constant_coef>12.694</constant_coef>
+    <linear_coef>-100.1424</linear_coef>
+    <initial_charge>1.1665</initial_charge>
+    <capacity>1.2009</capacity>
+    <resistance>0.061523</resistance>
+    <smooth_current_tau>1.9499</smooth_current_tau>
+    <charge_rate>0.2</charge_rate>
+</plugin>
+<plugin name="consumer" filename="libminion_battery_consumer.so">
+    <link_name>battery_link</link_name>
+    <battery_name>linear_battery</battery_name>
+    <power_load>6.6</power_load>
+</plugin>     -->

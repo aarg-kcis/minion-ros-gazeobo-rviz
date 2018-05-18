@@ -8,7 +8,7 @@ git clone https://github.com/yujinrobot/kobuki_msgs.git
 export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:~/<your_workspace>/src/brass_gazebo_battery/build/devel/lib
 ```
 ```
-Find and remove/comment the following line in CMakeLists.txt of brass_gazebo_battery package 
+Find and remove/comment the following line in CMakeLists.txt of brass_gazebo_battery package
 
 find_package(ignition-math2 REQUIRED)
 ```
@@ -29,6 +29,7 @@ mkdir build
 cd build
 cmake ../
 make
+export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:~/<path_to_Gazebo_Plugins>/Gazebo_Plugins/build
 ```
 # Open 2 terminals
 First terminal:
