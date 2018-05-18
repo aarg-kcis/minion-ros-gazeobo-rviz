@@ -1,0 +1,39 @@
+<launch>
+  <arg name="robot_name" default="minion"/>
+  <arg name="world_name" default="empty_world"/>
+  <arg name="roboID" default="0"/>
+  <arg name="x" default="0"/>
+  <arg name="y" default="0"/>
+  <arg name="z" default="0.1"/>
+
+<group ns="$(arg robot_name)_$(arg roboID)">
+  <include file="$(find minion_robot)/launch/controller_gazebo.launch">
+    <arg name="robot_name" value="$(arg robot_name)" />
+    <arg name="roboID" value="$(arg roboID)"/>
+    <arg name="namespace" value="$(arg robot_name)_$(arg roboID)" />
+    <arg name="model" value="$(find minion_robot)/urdf/minion.urdf.xacro"/>
+    <arg name="x" default="$(arg x)"/>
+    <arg name="y" default="$(arg y)"/>
+    <arg name="z" default="$(arg z)"/>
+  </include>
+</group>
+
+<!-- <rosparam command="load" file="$(find minion_robot)/config/state_controller.yaml" ns="minion_joint_state_controller" />
+<rosparam command="load" file="$(find minion_robot)/config/diff_drive_controller.yaml" ns="$(arg robot_name)_$(arg roboID)" />
+
+<node name="control_node_$(arg roboID)" pkg="controller_manager" type="spawner"
+  args="minion_joint_state_controller $(arg robot_name)_$(arg roboID)">
+</node>
+
+
+<group ns="$(arg robot_name)_$(arg roboID)">
+    <node name="robot_state_publisher_$(arg roboID)" pkg="robot_state_publisher" type="robot_state_publisher" >
+      <param name="publish_frequency" type="double" value="30.0" />
+    </node>
+</group>
+<node name="NH_$(arg roboID)" pkg="minion_robot" type="minion.py" args="$(arg robot_name) $(arg roboID)" output="screen">
+</node> -->
+
+
+
+</launch>

@@ -1,0 +1,4 @@
+  <launch>
+  <node name="minion" pkg="minion_robot" type="minion.py" output="screen">
+  </node>
+</launch>

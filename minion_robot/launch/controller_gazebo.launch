@@ -1,21 +1,36 @@
 <launch>
+  <arg name="robot_name" default="minion"/>
+  <arg name="roboID" default="0"/>
+  <arg name="namespace" default="$(arg robot_name)_$(arg roboID)"/>
+  <arg name="model" default="$(find minion_robot)/urdf/$(arg robot_name).urdf.xacro"/>
+  <arg name="x" default="0"/>
+  <arg name="y" default="0"/>
+  <arg name="z" default="0.1"/>
 
-  <arg name="model" default="$(find minion_robot)/urdf/minion.urdf.xacro"/>  
-  
-  <!--arg name="rvizconfig" default="$(find minion_robot)/rviz/urdf.rviz" /!-->
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(arg model)' namespace:=$(arg robot_name)_$(arg roboID)" />
 
-  <include file="$(find minion_robot)/launch/gazebo.launch">
-    <arg name="model" value="$(arg model)" />
-  </include>
+  <!-- <include file="$(find minion_robot)/launch/gazebo.launch">
+  </include> -->
 
-  <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" /-->
+  <!-- push robot_description to factory and spawn robot in gazebo -->
+  <node name="spawn_$(arg namespace)" pkg="gazebo_ros" type="spawn_model"
+    args="-param robot_description
+          -urdf
+          -x $(arg x)
+          -y $(arg y)
+          -z $(arg z)
+          -unpause
+          -model $(arg namespace)"
+    respawn="false" output="screen" />
 
-<!--   <rosparam command="load" file="$(find minion_robot)/config/state_controller.yaml" ns="minion_joint_state_controller" />
-  <rosparam command="load" file="$(find minion_robot)/config/diff_drive_controller.yaml" ns="minion_robot_controller" />
-  <node name="minion_robot_controller_spawner" pkg="controller_manager" type="spawner" args="minion_joint_state_controller minion_robot_controller"/> -->
+
+
+<!--arg name="rvizconfig" default="$(find minion_robot)/rviz/urdf.rviz" /!-->
+<!--node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" /-->
+
   <!--
   <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
     <param name="default_topic" value="/mw_robot_joint_controller/cmd_vel"/>
   </node>
-  -->
+-->
 </launch>
