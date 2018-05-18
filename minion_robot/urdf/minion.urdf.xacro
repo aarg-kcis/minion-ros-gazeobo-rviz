@@ -13,22 +13,29 @@
   </material>
 
   <!-- Constants-->
+  <xacro:property name="namespace"       value="$(arg namespace)" />
   <xacro:property name="chassis_mass"    value="2" />
   <xacro:property name="chassis_length"  value="0.25" />
   <xacro:property name="chassis_width"   value="0.2" />
   <xacro:property name="chassis_height"  value="0.06" />
   <xacro:property name="battery_mass"    value="0.2" />
   <xacro:property name="battery_length"  value="0.05" />
-  <xacro:property name="battery_width"   value="0.2" />  
-  <xacro:property name="battery_height"  value="0.05" />  
+  <xacro:property name="battery_width"   value="0.2" />
+  <xacro:property name="battery_height"  value="0.05" />
   <xacro:property name="wheel_thickness" value="0.02" />
   <xacro:property name="wheel_mass"      value="0.1" />
 
+  <!-- More Constants -->
+  <xacro:property name="lwid" value="left_wheel"/>
+  <xacro:property name="rwid" value="right_wheel"/>
+  <xacro:property name="ID" value="0"/>
+  <xacro:property name="wheel_radius" value="0.035"/>
+  <xacro:property name="joint_height" value="0.025"/>
 
 
   <xacro:macro name="wheel_inertia" params="mass">
       <inertial>
-          <mass value="${mass}" />       
+          <mass value="${mass}" />
           <inertia ixx="${mass*(3*wheel_radius*wheel_radius+wheel_thickness*wheel_thickness)/12}" ixy="0.0" ixz="0.0" iyy="${mass*(3*wheel_radius*wheel_radius+wheel_thickness*wheel_thickness)/12}" iyz="0.0" izz="${mass*wheel_radius*wheel_radius/2}"/>
       </inertial>
   </xacro:macro>
@@ -49,7 +56,7 @@
         <origin rpy="0 1.5707 1.5707" xyz="0 0 0"/>
       </collision>
       <xacro:wheel_inertia mass="${wheel_mass}"/>
-    </link>  
+    </link>
     <gazebo reference="${id}">
       <mu1 value="200"/>
       <mu2 value="200"/>
@@ -57,13 +64,13 @@
       <kd value="1.0" />
       <material>Gazebo/Grey</material>
 
-    </gazebo>    
+    </gazebo>
   </xacro:macro>
- 
+
 
   <xacro:macro name="wheel_joint" params="id child x y z">
    <joint name="${id}" type="continuous">
-     <parent link="base_link"/>
+     <parent link="${namespace}/base_link"/>
      <child link="${child}"/>
      <origin xyz="${x} ${y} ${z}"/>
      <axis xyz="0 1 0"/>
@@ -82,9 +89,9 @@
       <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </joint>
   </transmission>
-  </xacro:macro>  
+  </xacro:macro>
 
-  <link name="base_link">
+  <link name="${namespace}/base_link">
     <visual>
       <geometry>
         <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
@@ -97,46 +104,16 @@
         <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
       </geometry>
       <origin xyz="0 0 ${joint_height}"/>
-    </collision>       
+    </collision>
     <inertial>
       <mass value="${chassis_mass}"/>
-      <inertia ixx="${chassis_mass*chassis_width*chassis_width/12+chassis_mass*chassis_height*chassis_height/12}" ixy="0.0" ixz="0.0" 
-        iyy="${chassis_mass*chassis_length*chassis_length/12+chassis_mass*chassis_height*chassis_height/12}" iyz="0.0" 
+      <inertia ixx="${chassis_mass*chassis_width*chassis_width/12+chassis_mass*chassis_height*chassis_height/12}" ixy="0.0" ixz="0.0"
+        iyy="${chassis_mass*chassis_length*chassis_length/12+chassis_mass*chassis_height*chassis_height/12}" iyz="0.0"
         izz="${chassis_mass*chassis_length*chassis_length/12+chassis_mass*chassis_width*chassis_width/12}"/>
-    </inertial>   
+    </inertial>
   </link>
 
- <!-- <link name="battery_link">
-    <visual>
-      <geometry>
-        <box size="${battery_length} ${battery_width} ${battery_height}"/>
-      </geometry>
-      <origin xyz="0 0 0"/>
-    </visual>  
-    <collision>
-      <geometry>
-        <box size="${battery_length} ${battery_width} ${battery_height}"/>
-      </geometry>
-      <origin xyz="0 0 0"/>
-    </collision>   
-    <inertial>
-      <mass value="${battery_mass}"/>
-      <inertia ixx="${battery_mass*battery_width*battery_width/12+battery_mass*battery_height*battery_height/12}" ixy="0.0" ixz="0.0" 
-        iyy="${battery_mass*battery_length*battery_length/12+battery_mass*battery_height*battery_height/12}" iyz="0.0" 
-        izz="${battery_mass*battery_length*battery_length/12+battery_mass*battery_width*battery_width/12}"/>
-    </inertial>          
-    <battery name="linear_battery">
-       <voltage>12.592</voltage>
-    </battery>
- </link>
-
- <joint name="battery_base" type="fixed">
-   <parent link="base_link"/>
-   <child link="battery_link"/>
-   <origin xyz="0 0 ${joint_height}"/>
- </joint>  -->
-
-  <link name="castor">
+   <link name="${namespace}/castor">
     <visual>
       <geometry>
         <sphere radius="${wheel_radius}"/>
@@ -146,47 +123,40 @@
     <collision>
       <geometry>
         <sphere radius="${wheel_radius}"/>
-      </geometry>      
+      </geometry>
     </collision>
     <gazebo reference="castor">
       <slip1 value="1"/>
-      <slip2 value="1"/>  
+      <slip2 value="1"/>
       <kp value="10000000.0" />
       <kd value="1.0" />
       <material>Gazebo/Grey</material>
-    </gazebo>      
+    </gazebo>
   </link>
-  <joint name="base_castor" type="fixed">
-     <parent link="base_link"/>
-     <child link="castor"/>
-     <origin xyz="${chassis_length/2-wheel_radius} 0 ${joint_height}"/>        
+  <joint name="${namespace}/base_castor" type="fixed">
+     <parent link="${namespace}/base_link"/>
+     <child link="${namespace}/castor"/>
+     <origin xyz="${chassis_length/2-wheel_radius} 0 ${joint_height}"/>
   </joint>
-  
-  <!-- More Constants -->
-  <xacro:property name="lwid" value="left_wheel"/>
-  <xacro:property name="rwid" value="right_wheel"/>
-  <xacro:property name="ID" value="0"/>
-  <xacro:property name="wheel_radius" value="0.035"/>
-  <xacro:property name="joint_height" value="0.025"/>
 
   <!--Left Side-->
-  <xacro:wheel_link id="${lwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
-  <xacro:wheel_joint id="blw_${ID+1}" child="${lwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${chassis_width/2+0.01}" z="${joint_height}"/>
-  <xacro:wheel_joint_transmission id="blw_${ID+1}"/>
+  <xacro:wheel_link id="${namespace}/${lwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
+  <xacro:wheel_joint id="${namespace}/blw_${ID+1}" child="${namespace}/${lwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${chassis_width/2+0.01}" z="${joint_height}"/>
+  <xacro:wheel_joint_transmission id="${namespace}/blw_${ID+1}"/>
 
-  
+
   <!--Right Side-->
-  <xacro:wheel_link id="${rwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
-  <xacro:wheel_joint id="brw_${ID+1}" child="${rwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${-chassis_width/2-0.01}" z="${joint_height}"/>    
-  <xacro:wheel_joint_transmission id="brw_${ID+1}"/>
+  <xacro:wheel_link id="${namespace}/${rwid}_${ID+1}" radius="${wheel_radius}" thickness="${wheel_thickness}" color="orange" mass="${wheel_mass}"/>
+  <xacro:wheel_joint id="${namespace}/brw_${ID+1}" child="${namespace}/${rwid}_${ID+1}" x="${-chassis_length/2+0.03}" y="${-chassis_width/2-0.01}" z="${joint_height}"/>
+  <xacro:wheel_joint_transmission id="${namespace}/brw_${ID+1}"/>
 
   <gazebo>
-<!--     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
       <robotNamespace>/</robotNamespace>
-    </plugin> -->
-    <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+    </plugin>
+    <!-- <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
      <alwaysOn>true</alwaysOn>
-     <updateRate>20</updateRate>
+     <updateRate>10</updateRate>
      <leftJoint>blw_1</leftJoint>
      <rightJoint>brw_1</rightJoint>
      <wheelSeparation>0.2</wheelSeparation>
@@ -196,30 +166,31 @@
      <odometryTopic>odom</odometryTopic>
      <odometryFrame>odom</odometryFrame>
      <robotBaseFrame>base_footprint</robotBaseFrame>
-     <legacyMode>False</legacyMode>     
-     </plugin>
-     <plugin name="actuator_plugin_1" filename="libminion_actuator.so">
+     <legacyMode>False</legacyMode>
+     </plugin> -->
+
+<!--      <plugin name="actuator_plugin_1" filename="libminion_actuator.so">
       <actuator>
-        <name>actuator_let</name> <!-- optional -->
-        <joint>blw_1</joint> <!-- name of joint to actuate -->
-        <index>0</index> <!-- needed for multi-DOF joints -->
-        <type>electric_motor</type> <!-- motor model type -->
-        <power>5</power> <!-- parameters for motor model -->
+        <name>actuator_left</name>
+        <joint>blw_1</joint>
+        <index>0</index>
+        <type>electric_motor</type>
+        <power>5</power>
         <max_velocity>15.7</max_velocity>
         <max_torque>1.4</max_torque>
       </actuator>
-    </plugin>
-     <plugin name="actuator_plugin_2" filename="libminion_actuator.so">
+    </plugin> -->
+<!--      <plugin name="actuator_plugin_2" filename="libminion_actuator.so">
       <actuator>
-        <name>actuator_right</name> <!-- optional -->
-        <joint>brw_1</joint> <!-- name of joint to actuate -->
-        <index>0</index> <!-- needed for multi-DOF joints -->
-        <type>electric_motor</type> <!-- motor model type -->
-        <power>5</power> <!-- parameters for motor model -->
+        <name>actuator_right</name>
+        <joint>brw_1</joint>
+        <index>0</index>
+        <type>electric_motor</type>
+        <power>5</power>
         <max_velocity>15.7</max_velocity>
         <max_torque>1.4</max_torque>
       </actuator>
-    </plugin>    
+    </plugin>     -->
 <!--     <plugin name="battery" filename="libminion_battery.so">
         <ros_node>battery_monitor_client</ros_node>
         <link_name>battery_link</link_name>
