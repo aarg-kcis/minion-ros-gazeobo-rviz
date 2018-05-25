@@ -1,4 +1,11 @@
-# Minion Gazebo Plugins
+# Minion Gazebo-Ros Package 
+Screenshots:
+![alt text](minion_robot/images/1.jpg)
+![alt text](minion_robot/images/2.jpg)
+![alt text](minion_robot/images/3.jpg)
+![alt text](minion_robot/images/4.jpg)
+
+
 # Battery Plugin: Clone into catkin workspace src
 
 ```bash
