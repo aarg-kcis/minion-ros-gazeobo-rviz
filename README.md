@@ -1,10 +1,6 @@
 # Minion Gazebo-Ros Package 
 Screenshots:
-![alt text](minion_robot/images/1.jpg)
-![alt text](minion_robot/images/2.jpg)
-![alt text](minion_robot/images/3.jpg)
-![alt text](minion_robot/images/4.jpg)
-
+<img src="minion_robot/images/1.jpg" width="23%"></img> <img src="minion_robot/images/2.jpg" width="23%"></img> <img src="minion_robot/images/3.jpg" width="23%"></img> <img src="minion_robot/images/4.jpg" width="23%"></img> 
 
 # Battery Plugin: Clone into catkin workspace src
 
