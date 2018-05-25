@@ -6,8 +6,8 @@ ROBOS=$1
 # ROBOT_IDS="["
 # HUMAN_INPUT="[1"
 
-Xs=( -8 -3 -5 -1 3 7 11 15 19 23)
-Ys=( -8 -8 -8 -8 -8 -8 -8 -8 -8 -8)
+Xs=( -7 -5 -3 -1 1 3 5 7 9 11)
+Ys=(  0  0  0  0 0 0  0  0  0  0)
 
 if [ $# -ne 1 ]; then
         echo "usage: $0 <number of robots>"

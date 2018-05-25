@@ -62,7 +62,7 @@
       <mu2 value="200"/>
       <kp value="10000000.0" />
       <kd value="1.0" />
-      <material>Gazebo/Grey</material>
+      <material>Gazebo/White</material>
 
     </gazebo>
   </xacro:macro>
@@ -112,6 +112,9 @@
         izz="${chassis_mass*chassis_length*chassis_length/12+chassis_mass*chassis_width*chassis_width/12}"/>
     </inertial>
   </link>
+  <gazebo reference="base_link">
+    <material>Gazebo/Orange</material>
+  </gazebo>
 
    <link name="castor">
     <visual>
@@ -125,14 +128,15 @@
         <sphere radius="${wheel_radius}"/>
       </geometry>
     </collision>
-    <gazebo reference="castor">
-      <slip1 value="1"/>
-      <slip2 value="1"/>
-      <kp value="10000000.0" />
-      <kd value="1.0" />
-      <material>Gazebo/Grey</material>
-    </gazebo>
   </link>
+  <gazebo reference="castor">
+    <slip1 value="1"/>
+    <slip2 value="1"/>
+    <kp value="10000000.0" />
+    <kd value="1.0" />
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
   <joint name="base_castor" type="fixed">
      <parent link="base_link"/>
      <child link="castor"/>
@@ -152,7 +156,6 @@
 
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <robotNamespace>/${namespace}/diff_drive_controller</robotNamespace>
     </plugin>
   </gazebo>
 

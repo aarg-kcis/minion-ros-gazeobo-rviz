@@ -1,8 +1,0 @@
-type: "position_controllers/JointGroupPositionController"
-joints:
-  - blw_1
-  - blw_2
-  - blw_3
-  - blw_4
-  - blw_5
-  - blw_6  

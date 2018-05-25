@@ -5,31 +5,36 @@
   <arg name="x" default="0"/>
   <arg name="y" default="0"/>
   <arg name="z" default="0.1"/>
-
-<!-- <group ns="$(arg robot_name)_$(arg roboID)"> -->
-  <include file="$(find minion_robot)/launch/controller_gazebo.launch">
-    <arg name="robot_name" value="$(arg robot_name)" />
-    <arg name="roboID" value="$(arg roboID)"/>
-    <arg name="namespace" value="$(arg robot_name)_$(arg roboID)" />
-    <arg name="model" value="$(find minion_robot)/urdf/minion.urdf.xacro"/>
-    <arg name="x" default="$(arg x)"/>
-    <arg name="y" default="$(arg y)"/>
-    <arg name="z" default="$(arg z)"/>
-  </include>
-<!-- </group> -->
-<rosparam ns="$(arg robot_name)_$(arg roboID)" command="load" file="$(find minion_robot)/config/state_controller.yaml" />
-<rosparam ns="$(arg robot_name)_$(arg roboID)" command="load" file="$(find minion_robot)/config/diff_drive_controller.yaml"/>
-
-<group ns="$(arg robot_name)_$(arg roboID)">
-  <node name="control_spawner_$(arg roboID)" pkg="controller_manager" type="spawner" output="screen" args="$(arg robot_name)_$(arg roboID)/joint_state_controller $(arg robot_name)_$(arg roboID)/diff_drive_controller "/>
-  <node  name="robot_state_publisher_$(arg roboID)" pkg="robot_state_publisher" type="robot_state_publisher">
-    <param name="publish_frequency" type="double" value="30.0" />
-  </node>
-</group>
-<!-- <node  name="controller_spawner_stopped" pkg="controller_manager" type="spawner" output="screen"  args="stopped $(arg stopped_controllers)"/> -->
-<!-- <node name="NH_$(arg roboID)" pkg="minion_robot" type="minion.py" args="$(arg robot_name) $(arg roboID)" output="screen">
-</node> -->
+  <arg name="model" value="$(find minion_robot)/urdf/minion.urdf.xacro"/>
+  <arg name="namespace" value="$(arg robot_name)_$(arg roboID)" />
 
 
+<group ns="/$(arg robot_name)_$(arg roboID)">
+  <rosparam ns="joint_state_controller" command="load" file="$(find minion_robot)/config/state_controller.yaml" />
+  <rosparam ns="diff_drive_controller" command="load" file="$(find minion_robot)/config/diff_drive_controller.yaml"/>
+   <param name="/$(arg robot_name)_$(arg roboID)/robot_description" command="$(find xacro)/xacro.py '$(arg model)' namespace:=$(arg robot_name)_$(arg roboID)" />
+      <node name="spawn_$(arg namespace)" pkg="gazebo_ros" type="spawn_model"
+        args="-param robot_description
+              -urdf
+              -x $(arg x)
+              -y $(arg y)
+              -z $(arg z)
+              -unpause
+              -model $(arg namespace)"
+        respawn="false" output="screen" />
+
+      <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher_$(arg roboID)">
+        <param name="publish_frequency" type="double" value="30.0" />
+      </node>
+
+      <node name="$(arg robot_name)_$(arg roboID)_controller_spawner" pkg="controller_manager" type="spawner"
+        args="--namespace=/$(arg robot_name)_$(arg roboID)
+        joint_state_controller
+        diff_drive_controller
+        --shutdown-timeout 3">
+      </node>
+  </group>
+
+<!-- <node name="NH_$(arg roboID)" pkg="minion_robot" type="minion.py" args="$(arg robot_name) $(arg roboID)" output="screen"/> -->
 
 </launch>

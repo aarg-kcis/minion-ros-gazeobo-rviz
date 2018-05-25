@@ -5,7 +5,7 @@ from geometry_msgs.msg import Twist
 
 def commands(robName,robID):
 	rospy.init_node('NH_'+robName+'_'+robID,anonymous=True)
-	pub=rospy.Publisher(robName+'_'+robID+'_NH_controller/cmd_vel', Twist, queue_size=10)
+	pub=rospy.Publisher(robName+'_'+robID+'/diff_drive_controller/cmd_vel', Twist, queue_size=10)
 	robot_command = Twist()
 	#rate = rospy.Rate(10) # 10hz
 	robot_command.linear.x = 0.2
