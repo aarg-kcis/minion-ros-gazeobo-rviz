@@ -35,7 +35,7 @@ cmake ../
 make
 export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:~/<path_to_Gazebo_Plugins>/Gazebo_Plugins/build
 ```
-# Open a 8x8 matrix of terminals (Terminator)
+# Open a 3x3 matrix of terminals (Terminator)
 First terminal:
 ```bash
 roscore
