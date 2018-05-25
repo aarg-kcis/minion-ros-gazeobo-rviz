@@ -31,23 +31,25 @@ cmake ../
 make
 export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:~/<path_to_Gazebo_Plugins>/Gazebo_Plugins/build
 ```
-# Open 2 terminals
+# Open a 8x8 matrix of terminals (Terminator)
 First terminal:
 ```bash
-cd catkin_ws/src/minion_robot/scripts
-./setup_gazebo.sh
+roscore
+```
+Second terminal:
+```bash
+roslaunch minion_robot gazebo.launch world_name:=minion_world
 ```
 
-Second terminal run:
+Third terminal:
 ```bash
-rostopic pub /cmd_vel geometry_msgs/Twist "linear:
-  x: 0.5
-  y: 0.0
-  z: 0.0
-angular:
-  x: 0.0
-  y: 0.0
-  z: 0.5"
+cd catkin_ws/src/minion_robot/scripts
+./setup_gazebo.sh <num_of_robots>
+```
+
+Open a separate terminal for each robot:
+```bash
+ rosrun minion_robot minion.py minion <robot_ID> #Enter 1 .. <num_of_robots> in each new terminal
 ```
 
 # To Kill Process:
