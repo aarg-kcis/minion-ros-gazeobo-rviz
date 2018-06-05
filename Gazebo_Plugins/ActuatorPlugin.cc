@@ -142,8 +142,28 @@ void ActuatorPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
     // Set up a physics update callback
     this->connections.push_back(event::Events::ConnectWorldUpdateBegin(
       std::bind(&ActuatorPlugin::WorldUpdateCallback, this)));
+
+	if (!ros::isInitialized())
+	{
+	  int argc = 0;
+	  char **argv = NULL;
+	  ros::init(argc, argv, "gazebo_client",
+	      ros::init_options::NoSigintHandler);
+	}
+
+	this->rosNode.reset(new ros::NodeHandle("gazebo_client"));
+
+
+	ros::SubscribeOptions so = ros::SubscribeOptions::create<std_msgs::Float32>("/vel_cmd",1,boost::bind(&ActuatorPlugin::OnRosMsg, this, _1),
+      ros::VoidPtr(), &this->rosQueue);
+
+	this->rosSub = this->rosNode->subscribe(so);
+
+	this->rosQueueThread = std::thread(std::bind(&ActuatorPlugin::QueueThread, this));
   }
 }
+
+
 
 //////////////////////////////////////////////////
 void ActuatorPlugin::WorldUpdateCallback()

@@ -7,6 +7,11 @@
 #include <gazebo/common/Events.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/gazebo.hh>
+#include <thread>
+#include "ros/ros.h"
+#include "ros/callback_queue.h"
+#include "ros/subscribe_options.h"
+#include "std_msgs/Float32.h"
 
 namespace gazebo
 {
@@ -54,6 +59,29 @@ namespace gazebo
 
     /// \brief Connections to events associated with this class.
     private: std::vector<event::ConnectionPtr> connections;
+
+    private: std::unique_ptr<ros::NodeHandle> rosNode;
+
+    private: ros::Subscriber rosSub;
+
+    private: ros::CallbackQueue rosQueue;
+
+    private: std::thread rosQueueThread;
+
+    public: void OnRosMsg(const std_msgs::Float32ConstPtr &_msg)
+	{
+	  this->SetVelocity(_msg->data);
+	}
+
+	/// \brief ROS helper function that processes messages
+	private: void QueueThread()
+	{
+	  static const double timeout = 0.01;
+	  while (this->rosNode->ok())
+	  {
+	    this->rosQueue.callAvailable(ros::WallDuration(timeout));
+	  }
+	}
   };
 
   // Register this plugin with the simulator
