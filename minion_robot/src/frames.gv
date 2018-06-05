@@ -1,0 +1,17 @@
+digraph G {
+"minion_2/base_link" -> "minion_2/castor"[label="Broadcaster: /minion_2/robot_state_publisher_2\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 86.160 sec old)\nBuffer length: 0.000 sec\n"];
+"minion_2/wheel_odom" -> "minion_2/base_link"[label="Broadcaster: /gazebo\nAverage rate: 50.000 Hz\nMost recent transform: 86.160 ( 0.000 sec old)\nBuffer length: 4.960 sec\n"];
+"minion_1/base_link" -> "minion_1/castor"[label="Broadcaster: /minion_1/robot_state_publisher_1\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 86.160 sec old)\nBuffer length: 0.000 sec\n"];
+"minion_1/wheel_odom" -> "minion_1/base_link"[label="Broadcaster: /gazebo\nAverage rate: 50.202 Hz\nMost recent transform: 86.150 ( 0.010 sec old)\nBuffer length: 4.960 sec\n"];
+"minion_1/base_link" -> "minion_1/left_wheel_1"[label="Broadcaster: /minion_1/robot_state_publisher_1\nAverage rate: 25.202 Hz\nMost recent transform: 86.150 ( 0.010 sec old)\nBuffer length: 4.960 sec\n"];
+"minion_1/base_link" -> "minion_1/right_wheel_1"[label="Broadcaster: /minion_1/robot_state_publisher_1\nAverage rate: 25.202 Hz\nMost recent transform: 86.150 ( 0.010 sec old)\nBuffer length: 4.960 sec\n"];
+"world" -> "minion_1/wheel_odom"[label="Broadcaster: /minion_1/static_world_to_odom_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 86.220 ( -0.060 sec old)\nBuffer length: 4.900 sec\n"];
+"minion_1/base_link" -> "lookahead"[label="Broadcaster: /pure_pursuit\nAverage rate: 28.195 Hz\nMost recent transform: 86.120 ( 0.040 sec old)\nBuffer length: 4.930 sec\n"];
+"world" -> "minion_2/wheel_odom"[label="Broadcaster: /minion_2/static_world_to_odom_publisher\nAverage rate: 10.204 Hz\nMost recent transform: 86.220 ( -0.060 sec old)\nBuffer length: 4.900 sec\n"];
+"minion_2/base_link" -> "minion_2/left_wheel_1"[label="Broadcaster: /minion_2/robot_state_publisher_2\nAverage rate: 25.202 Hz\nMost recent transform: 86.160 ( 0.000 sec old)\nBuffer length: 4.960 sec\n"];
+"minion_2/base_link" -> "minion_2/right_wheel_1"[label="Broadcaster: /minion_2/robot_state_publisher_2\nAverage rate: 25.202 Hz\nMost recent transform: 86.160 ( 0.000 sec old)\nBuffer length: 4.960 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 86.160"[ shape=plaintext ] ;
+ }->"world";
+}

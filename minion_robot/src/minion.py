@@ -2,10 +2,12 @@
 import sys
 import rospy
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 
 def commands(robName,robID):
 	rospy.init_node('NH_'+robName+'_'+robID,anonymous=True)
 	pub=rospy.Publisher(robName+'_'+robID+'/diff_drive_controller/cmd_vel', Twist, queue_size=10)
+	sub=rospy.Subscriber(robName+'_'+robID+'/diff_drive_controller/odom',Odometry, update_pose)
 	robot_command = Twist()
 	#rate = rospy.Rate(10) # 10hz
 	robot_command.linear.x = 0.2
@@ -18,6 +20,8 @@ def commands(robName,robID):
 		pub.publish(robot_command)
     	#rate.sleep()
 
+def update_pose(msg):
+	print msg
 
 
 

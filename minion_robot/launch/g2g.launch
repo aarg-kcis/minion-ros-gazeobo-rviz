@@ -1,0 +1,6 @@
+<launch>
+  <arg name="robot_name" default="minion"/>
+  <arg name="roboID" default="0"/>
+  <arg name="namespace" value="$(arg robot_name)_$(arg roboID)" />
+  <node pkg="minion_robot" type="g2g.py" name="g2g_$(arg namespace)" args="$(arg robot_name) $(arg roboID) "/>
+</launch>

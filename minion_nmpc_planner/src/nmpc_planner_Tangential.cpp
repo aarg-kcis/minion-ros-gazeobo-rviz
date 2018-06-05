@@ -1,0 +1,641 @@
+ #include "../include/nmpc_planner.h"
+
+void Planner::storeLatestTargetGTPose(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+ if(!targetEstimationIsActive)   // when it is active, the callback storeLatestTargetEstimatedPose is used.
+    targetObjectGTPose = *msg; // GT anyway comes in NED
+ else
+ {
+     //printf("Not using the GT\n");
+   if(useGTforTarget)  
+       targetObjectGTPose = *msg;
+ }
+}
+
+void Planner::avoidTeamMates_byComputingExtForce(double sumOfGradients, int direction)
+{
+    selfPoseTraj.poses.clear();
+    geometry_msgs::Pose tmpPose;
+    float xT =  targetObjectGTPose.pose.position.x;
+    float yT = -targetObjectGTPose.pose.position.y;
+    int flag_weight = 0;
+    for(int t=0;t<11;t++)
+    {   
+        bool atLeastOneMatePresent = false;
+        
+        Position3D tCurrentSelfPosition(selfPose.pose.pose.position.x,selfPose.pose.pose.position.y,selfPose.pose.pose.position.z);
+        
+        if(t==0)
+        {
+            tCurrentSelfPosition(0) = selfPose.pose.pose.position.x;
+            tCurrentSelfPosition(1) = selfPose.pose.pose.position.y;
+            tCurrentSelfPosition(2) = selfPose.pose.pose.position.z;
+        }
+        else
+        {
+            tCurrentSelfPosition(0) = StateInput(0,t);
+            tCurrentSelfPosition(1) = StateInput(2,t);
+            tCurrentSelfPosition(2) = StateInput(4,t);
+                       
+            tmpPose.position.x = StateInput(0,t);
+            tmpPose.position.y = StateInput(2,t);
+            tmpPose.position.z = StateInput(4,t);            
+            selfPoseTraj.poses.push_back(tmpPose);
+        }
+        
+        Position3D virtualPoint = tCurrentSelfPosition;              
+        Eigen::Vector3d totalForce = Velocity3D::Zero();
+
+
+            for(int j=0; j<numRobots_; j++)
+            {
+                if(heardFromMates[j])
+                {                                    
+                    Position3D matePosition(matesPoses[j].pose.pose.position.x,matesPoses[j].pose.pose.position.y,matesPoses[j].pose.pose.position.z); 
+
+                    if(t!=0 && heardFromMateTrajs[j])
+                    {
+                        matePosition(0) = matesPoseTrajs[j].poses[t-1].position.x;
+                        matePosition(1) = matesPoseTrajs[j].poses[t-1].position.y;
+                        matePosition(2) = matesPoseTrajs[j].poses[t-1].position.z;
+                    }
+
+                    double thetaMate = atan2(matePosition(1)-yT,matePosition(0)-xT);
+                    double theta = atan2(tCurrentSelfPosition(1)-yT,tCurrentSelfPosition(0)-xT);                    
+                    
+                    Position3D posDiff = virtualPoint - matePosition;
+                    double neighborDist = posDiff.norm();
+                    Position3D posDiffUnit = posDiff.normalized();    
+
+                    double thetaDiff = pow(theta-thetaMate,2);
+                    Position3D posDiff2 (tCurrentSelfPosition(0) - xT,tCurrentSelfPosition(1) - yT,0);
+                    double neighborDist2 = thetaDiff;         
+
+                    Position3D posDiffMate (matePosition(0) - xT,matePosition(1) - yT, 0);
+
+
+                    
+                    Position3D tangent(-posDiff(1),posDiff(0),0);
+                    Position3D tangentUnit = tangent.normalized();
+
+                    Position3D tangentNeg(posDiff(1),-posDiff(0),0);
+                    Position3D tangentUnitNeg = tangentNeg.normalized(); 
+
+                    double potentialForce1 = 0.0;
+                    double potentialForce2 = 0.0;
+                    potentialForce1 = formationRepulsiveGradientVector[j]->getPotential(neighborDist,neighborDistThreshold);        
+                    // if (neighborDist <= neighborDistThreshold )
+                    //     attractionWeight = 1000;         
+                    // else                       
+                    //     attractionWeight = 1000;         
+                    // potentialForce2 = formationRepulsiveGradientVector[j]->getPotential(neighborDist2,40);
+
+
+                    // if (j == 2)
+                    // {                                            
+                    if(neighborDist<neighborDistThreshold)
+                        atLeastOneMatePresent = true; //if no neighbour is in this range then we do not do mate avoidance.
+                    
+                     //sumOfGradients = posDiff2.norm();
+                     //if (sumOfGradients < 1){
+                    //     potentialForce2 = 0;
+                    //     sumOfGradients = 0;      
+                    //     }
+                    sumOfGradients = abs(sumOfGradients);
+                    //if(sumOfGradients > 5)                
+                    //     sumOfGradients = 5;                          
+                    //sumOfGradients = 0;                    
+                    totalForce += (potentialForce1) * posDiffUnit * tFormationRepulGain ;
+
+                    //ROS_INFO("Potential Force Magnitude = %f",potentialForce1*tFormationRepulGain);   
+                    if (neighborDist <= neighborDistThreshold+1.0 && t <1 ) 
+                        {
+                            //totalForce +=  0.7* potentialForce2 * tangentUnit * sumOfGradients; 
+                            potentialForce2 = sumOfGradients/attractionWeight;
+                            if (potentialForce2 > 10)
+                                potentialForce2 = 10;
+
+                            if (direction > 0)
+                                totalForce +=  2*tangentUnit*potentialForce2 ; 
+                            else 
+                                totalForce +=  2*tangentUnitNeg*potentialForce2 ; 
+
+                            attractionWeight = 30;     
+                            flag_weight = 1;                                                   
+                        }
+                    //else if (t < 1 && !flag_weight) attractionWeight = 100;
+                        else attractionWeight = 100;
+
+
+                    // {
+                    //     //theta = fmod((theta + 2*3.14),3.14);yaw = fmod((quat2eul(msg)+2*3.14),3.14);
+                    //    // if (theta - yaw > 0)
+
+                    
+                    //     //else 
+                    //     //    totalForce += (potentialForce2) * tangentUnitNeg * sumOfGradients; 
+                    // }                    
+
+                    // if((neighborDist>neighborDistThreshold && neighborDist < neighborDistThreshold+5) && (j == 0 || j == 1))
+                    // {                     
+                    //     Position3D tangent;                        
+                    //     tangent(0) = -posDiff(1);
+                    //     tangent(1) =  posDiff(0);                                               
+                    //     tangent(2) =     0;
+                    //     Position3D tangentUnit = tangent.normalized();
+                    //     double tangentForce = 100;
+                    //     totalForce += tangentForce*tangentUnit;                    
+                    // }
+                }
+                
+            }        
+
+            if(atLeastOneMatePresent)                 
+            {                
+                obstacle_force(0,t) = totalForce(0);
+                obstacle_force(1,t) = totalForce(1);
+                obstacle_force(2,t) = 0;//totalForce(2);                                                
+            }
+            else
+            {
+                obstacle_force(0,t) = 0;
+                obstacle_force(1,t) = 0;
+                obstacle_force(2,t) = 0;
+            }
+    }   
+}
+
+
+void Planner::storeVirtualDestination(const geometry_msgs::Pose::ConstPtr& msg) //not used
+{
+  virtualDestination.position = msg->position;
+  virtualDestination.orientation = msg->orientation;
+  virtualDestination.velocity.x = virtualDestination.velocity.y = virtualDestination.velocity.z = 0.0;
+  virtualDesiredOrientation = 0.0;
+}
+ 
+
+void Planner::repositionDestinationDueToStaticObstacle(float &x, float &y, float z, float tgtX, float tgtY) // Geometric Hack to avoid obstacles
+{
+    //here do the free ray check algorithm.
+    // remember that the arguments of this function is in NWU but the obstacle received in its update callback  are in NED so it needs to be converted first to NWu. 
+    //R:meaning of above line?   
+    float x1 = x, y1 =y, x2 = tgtX, y2=tgtY;
+    
+    float z1 = z; float z2 = 0.3; //center of the ground target
+    
+    float x_obs=0,y_obs=0,z_obs=0,AB=0,AP=0,PB=0;
+    
+    double deltaTheta = PI/20;
+    double r = distanceThresholdToTarget;
+    bool targetFullyBlocked = false;
+    bool openingFound = false, leftOpeningFound = false, rightOpeningFound = false;
+    bool obstacleWithinRay = false;
+    double delta_1 = 0.05;
+    double delta_2 = 0.1;
+       
+    for (int i=0; i < obstaclesFromRobots.poses.size(); i++)
+    {
+        //first check if the obstacle point is on the line
+        x_obs = obstaclesFromRobots.poses[i].position.x;
+        y_obs = obstaclesFromRobots.poses[i].position.y; // NED to NWU
+        z_obs = obstaclesFromRobots.poses[i].position.z; // NED to NWU
+        
+        AB = sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
+        AP = sqrt((x_obs-x1)*(x_obs-x1)+(y_obs-y1)*(y_obs-y1)+(z_obs-z1)*(z_obs-z1));
+        PB = sqrt((x2-x_obs)*(x2-x_obs)+(y2-y_obs)*(y2-y_obs)+(z2-z_obs)*(z2-z_obs));
+        
+        if(fabs(AB - (AP + PB))<delta_1)
+        {
+            obstacleWithinRay = true;
+            break;
+        }
+        
+    }
+    
+    if(obstacleWithinRay==false)
+    {
+        //ROS_INFO("Clear Visibility to object");
+        return;  // freely visible object
+        tGoalAttractionGain = 5.0;
+    }
+    else // do something
+    {
+        tGoalAttractionGain = 5.0;
+        openingFound = false;
+        for(int j=1; j<=20; j++)
+        {
+        
+            float theta = atan2(y1-y2,x1-x2);    
+            
+            double x1_left = x2 + r*cos(theta - j * deltaTheta);
+            double y1_left = y2 + r*sin(theta - j * deltaTheta);
+        
+            double x1_right = x2 + r*cos(theta + j * deltaTheta);
+            double y1_right = y2 + r*sin(theta + j * deltaTheta);
+            
+            leftOpeningFound = true;
+            rightOpeningFound = true;
+            
+            for (int i=0; i < obstaclesFromRobots.poses.size(); i++)
+            {
+                //first check if the obstacle point is on the line
+                x_obs = obstaclesFromRobots.poses[i].position.x;
+                y_obs = obstaclesFromRobots.poses[i].position.y; // NED to NWU
+                z_obs = obstaclesFromRobots.poses[i].position.z; // NED to NWU
+                
+                AB = sqrt((x2-x1_left)*(x2-x1_left)+(y2-y1_left)*(y2-y1_left)+(z2-z1)*(z2-z1));
+                AP = sqrt((x_obs-x1_left)*(x_obs-x1_left)+(y_obs-y1_left)*(y_obs-y1_left)+(z_obs-z1)*(z_obs-z1));
+                PB = sqrt((x2-x_obs)*(x2-x_obs)+(y2-y_obs)*(y2-y_obs)+(z2-z_obs)*(z2-z_obs));
+                
+                if(fabs(AB - (AP + PB))<delta_2)
+                {
+                    ROS_INFO("Left Opening closed at delta theta = %f", j*deltaTheta);
+                    leftOpeningFound = false;
+                    //x = x1_left;
+                    //y = y1_left;
+                }
+                
+                AB = sqrt((x2-x1_right)*(x2-x1_right)+(y2-y1_right)*(y2-y1_right)+(z2-z1)*(z2-z1));
+                AP = sqrt((x_obs-x1_right)*(x_obs-x1_right)+(y_obs-y1_right)*(y_obs-y1_right)+(z_obs-z1)*(z_obs-z1));
+                PB = sqrt((x2-x_obs)*(x2-x_obs)+(y2-y_obs)*(y2-y_obs)+(z2-z_obs)*(z2-z_obs));
+                
+                if(fabs(AB - (AP + PB))<delta_2)
+                {
+                    ROS_INFO("Right Opening closed at delta theta = %f", j*deltaTheta);
+                    //openingFound = true;
+                    rightOpeningFound = false;
+                    //x = x1_right;
+                    //y = y1_right;
+                }                
+                
+                if(!rightOpeningFound && !leftOpeningFound)
+                    break;
+                
+            }            
+                
+            if(leftOpeningFound)
+            {
+                x = x1_left;
+                y = y1_left;
+                openingFound = true;
+            }                
+            if(rightOpeningFound)
+            {
+                x = x1_right;
+                y = y1_right;
+                openingFound = true;
+            }                
+                        
+            if(openingFound)
+                break;
+        }
+        
+        return;
+    }   
+}
+ 
+ 
+void Planner::updateObstaclesCallback(const geometry_msgs::PoseArray::ConstPtr& msg, int robID)
+{
+  obstaclesFromRobots = *msg;
+}
+
+ 
+void Planner::matePoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg, int robID)
+{
+  //note that robID follows the 1-base, not zero base
+  matePose = *msg; 
+  heardFromMate=true; 
+  heardFromMates[robID-1] = true;  
+} 
+
+void Planner::matePoseTrajectoryCallback(const geometry_msgs::PoseArray::ConstPtr& msg, int robID)
+{
+  matesPoseTrajs[robID-1] = *msg;
+  heardFromMateTrajs[robID-1] = true;
+} 
+
+double Planner::quat2eul(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& queryPose)
+{
+    geometry_msgs::PoseWithCovarianceStamped queryPose_ = *queryPose;
+    tf::Quaternion q(
+        queryPose_.pose.pose.orientation.x,
+        queryPose_.pose.pose.orientation.y,
+        queryPose_.pose.pose.orientation.z,
+        queryPose_.pose.pose.orientation.w);
+    tf::Matrix3x3 m(q);
+    double selfRoll, selfPitch, selfYaw;
+    m.getRPY(selfRoll, selfPitch, selfYaw);    
+    return selfYaw;
+}
+
+void Planner::selfPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg, int robID) //most important -- self nmpc
+{
+    outPoseModifiedToRviz.header = msg->header;
+    outPoseModifiedToRviz.header.frame_id = "world";
+    outPoseToRviz.header = msg->header;
+    outPoseToRviz.header.frame_id = "world";        
+    selfPose = *msg;        
+    useZeroAsFixedTarget = 0;
+    #ifdef USE_CVXGEN_1ROB
+   
+    //for all three solvers some values are fixed or are initialized
+    MPCsolver solveMPC;
+    
+    ExtForce(0) = 0;
+    ExtForce(1) = 0; 
+    ExtForce(2) =  -1.0 * GRAVITY;     
+    Eigen::Matrix<double, 6, 1> cur_state = Eigen::Matrix<double, 6, 1>::Zero();
+    Eigen::Matrix<double, 6, 2> state_limits = Eigen::Matrix<double, 6, 2>::Zero();
+    Eigen::Matrix<double, 3, 2> input_limits = Eigen::Matrix<double, 3, 2>::Zero();    
+    Eigen::Matrix<double, 6, 1> term_state = Eigen::Matrix<double, 6, 1>::Zero();
+    Eigen::Matrix<double, 9, 1> costWeight = Eigen::Matrix<double, 9, 1>::Zero();
+    Eigen::Matrix<double, 3, 1> temp_a = Eigen::Matrix<double, 3, 1>::Zero(); // Dynamics Matrix
+    Eigen::Matrix<double, 3, 1> temp_b = Eigen::Matrix<double, 3, 1>::Zero(); // Control Transfer Matrix
+
+    
+    float r = distanceThresholdToTarget; // keep 2 m fro the target
+    float x4,y4, x2,y2, x5,y5, x6,y6, x7,y7, theta, theta_, alpha, beta, gamma;
+    float x3 = targetObjectGTPose.pose.position.x + 0 * INTERNAL_SUB_STEP * targetObjectGTVelocity.pose.pose.position.x;
+    float y3 = -targetObjectGTPose.pose.position.y - 0 * INTERNAL_SUB_STEP * targetObjectGTVelocity.pose.pose.position.y;
+    float x1 = selfPose.pose.pose.position.x;
+    float y1 = selfPose.pose.pose.position.y;
+    float z4 = -copterDesiredHeightinNED; // fixed heightin NWU
+    int flag, direction; 
+    x2 = matePose.pose.pose.position.x;
+    y2 = matePose.pose.pose.position.y;      
+    
+    if(useZeroAsFixedTarget)
+    {
+        x3 = 0.0;
+        y3 = 0.0;  
+    }
+    else
+    {
+        x3 = targetObjectGTPose.pose.position.x + 0 * INTERNAL_SUB_STEP * targetObjectGTVelocity.pose.pose.position.x;
+        y3 = -targetObjectGTPose.pose.position.y - 0 * INTERNAL_SUB_STEP * targetObjectGTVelocity.pose.pose.position.y;        
+    }    
+
+    if (abs(x3 - x3_prev) < 0.1 && abs(y3 - y3_prev) < 0.1) 
+    {
+        flag = 1;           
+    }
+
+    else 
+    {
+        flag = 0;    
+    }
+
+    //State Cost
+    costWeight(0) = attractionWeight; //x
+    costWeight(1) = attractionWeight; //vx
+    costWeight(2) = attractionWeight; //y
+    costWeight(3) = attractionWeight; //vy
+    costWeight(4) = attractionWeight; //z
+    costWeight(5) = attractionWeight; //vz
+    //Control Input Cost
+    costWeight(6) = 1;     //ax 
+    costWeight(7) = 1;     //ay
+    costWeight(8) = 0.1;   //az   
+
+
+    //////////////////////////////////////////////////////////////////////////////        
+    theta = atan2(y1-y3,x1-x3);
+
+
+    if (theta > 0 && flag == 0)
+        direction = 1;
+    else if(theta <=0 && flag ==0) 
+        direction = -1;
+
+
+    x4 = x3 + r*cos(theta);
+    y4 = y3 + r*sin(theta); 
+
+    // Terminal State to Compute Gradients
+    term_state(0) = x4;
+    term_state(1) = 0; // want the robot to stop there at the destination
+    term_state(2) = y4;
+    term_state(3) = 0;
+    term_state(4) = z4;
+    term_state(5) = 0;
+
+    
+    repositionDestinationDueToStaticObstacle(x4,y4,z4,x3,y3); // do this in NWU
+    
+
+    gradientVector = Eigen::Matrix<double, 9, 11>::Zero();
+    sumOfGradients=0;
+    // For terminal state objective
+    for(int j=0; j<4; j++)
+    {
+        gradientVector(j,10) = 2*(StateInput(j,10)-term_state(j))*costWeight(j);
+        //ROS_INFO("StateInput(%d,10)-term_state(%d) = %f",j,j,StateInput(j,10)-term_state(j));    
+    }
+            
+    //For control inputs objective    
+    for(int j=6; j<9; j++)
+    {
+        //temp_a(j-6) = 2*(StateInput(j,34)+ExtForce(j-6)+obstacle_force(j-6,10))*costWeight(j);        
+        gradientVector(j,10) = 0;//temp_a(j-6);
+    }
+    // storing in matrices for second term of control gradient    
+    for (int j=0;j<6;j+=2)
+    {   
+        int current_index = j/2;
+        temp_b(current_index) = 
+            2*costWeight(j)*(StateInput(j)-term_state(j)+StateInput(j+1)*deltaT+StateInput(current_index+6)*0.5*pow(deltaT,2))*pow(deltaT,2)*0.5 + 
+            2*costWeight(j+1)*(StateInput(j+1)+StateInput(current_index+6)*deltaT)*deltaT;
+        gradientVector(current_index+6,10)+=temp_b(current_index);
+    }
+
+
+    for(int j=0; j<9; j++)
+    {
+        sumOfGradients += gradientVector(j,10);               
+    }        
+    //////////////////////////////////////////////////////////////////////////////        
+
+    sumOfGradients = -abs(sumOfGradients);    
+    if (isnan(-sumOfGradients))
+        sumOfGradients=0;
+    
+    //ROS_INFO("Gradient of Optimization = %f",-abs(sumOfGradients)/attractionWeight);   
+
+    x4 = x3 + r*cos(theta+ 0*deltaT*direction*abs(sumOfGradients)/attractionWeight);//+diminishingOmega*deltaT);
+    y4 = y3 + r*sin(theta+ 0*deltaT*direction*abs(sumOfGradients)/attractionWeight);//+diminishingOmega*deltaT); 
+
+    // filling the terminal state
+    term_state(0) = x4;
+    term_state(1) = 0; // want the robot to stop there at the destination
+    term_state(2) = y4;
+    term_state(3) = 0;
+    term_state(4) = z4;
+    term_state(5) = 0;
+      
+
+
+    // filling the current state
+    cur_state(0) = selfPose.pose.pose.position.x;
+    cur_state(1) = 0; //********* Fill the right velocity fill the velocity later with another data type.. for now it is 0
+    cur_state(2) = selfPose.pose.pose.position.y;
+    cur_state(3) = 0; // fill the velocity later with another data type.. for now it is 0
+    cur_state(4) = selfPose.pose.pose.position.z;
+    cur_state(5) = 0; // fill the velocity later with another data type.. for now it is 0
+
+    //now the state limits
+    state_limits(0,0) = -20;        state_limits(0,1) = 20;
+    state_limits(1,0) = -5;        state_limits(1,1) = 5; 
+    state_limits(2,0) = -20;        state_limits(2,1) = 20;
+    state_limits(3,0) = -5;        state_limits(3,1) = 5;
+    state_limits(4,0) = 5;        state_limits(4,1) = 5;
+    state_limits(5,0) = -5;         state_limits(5,1) = 5;
+    
+    input_limits(0,0) = -2;         input_limits(0,1) = 2;
+    input_limits(1,0) = -2;         input_limits(1,1) = 2;
+    input_limits(2,0) = -1;         input_limits(2,1) = 1;        
+
+    
+
+
+    avoidTeamMates_byComputingExtForce(sumOfGradients,direction); // also fills in selfPoseTraj message
+
+    //State Cost
+    costWeight(0) = attractionWeight; //x
+    costWeight(1) = attractionWeight; //vx
+    costWeight(2) = attractionWeight; //y
+    costWeight(3) = attractionWeight; //vy
+    costWeight(4) = attractionWeight; //z
+    costWeight(5) = attractionWeight; //vz
+
+    StateInput = solveMPC.OCPsolDesigner(deltaT, obstacle_force, ExtForce, cur_state, term_state, costWeight, state_limits, input_limits);
+
+    x3_prev = x3;y3_prev = y3;        
+    ROS_INFO("attractionWeight = %f,direction = %d",attractionWeight,direction);   
+
+    //ROS_INFO("diminishingOmega = %f",diminishingOmega);   
+    //  Publish most recent output of nmpc
+    outPose.position.x =  StateInput(0,10);
+    outPose.velocity.x =  StateInput(1,10);  
+    outPose.position.y = -StateInput(2,10);
+    outPose.velocity.y = -StateInput(3,10);
+    outPose.position.z = -StateInput(4,10);
+    outPose.velocity.z = -StateInput(5,10);   
+
+    //R
+    wayPoint.position.x = StateInput(0,10);
+    wayPoint.position.y = StateInput(2,10);
+    wayPoint.position.z = StateInput(4,10);
+
+
+    
+    if(useZeroAsFixedTarget)
+    {
+        outPose.POI.x = 0;
+        outPose.POI.y = 0;
+        outPose.POI.z = 0; 
+    }
+    else
+    {
+        outPose.POI.x = targetObjectGTPose.pose.position.x;
+        outPose.POI.y = targetObjectGTPose.pose.position.y;
+        outPose.POI.z = targetObjectGTPose.pose.position.z;             
+    }   
+              
+    outPose.d2t = sqrt(pow(targetObjectGTPose.pose.position.x - selfPose.pose.pose.position.x,2) +
+                       pow(-targetObjectGTPose.pose.position.y - selfPose.pose.pose.position.y,2));
+
+    outPose.grad = sumOfGradients;
+    outPose.direction = direction;
+
+    outPose.header= msg->header;
+    selfPoseTraj.header = msg->header;
+
+    pubOutPoseSelf_.publish(outPose);
+    pubMatlabPoseSelf.publish(wayPoint);
+    pubSelfPoseTraj_.publish(selfPoseTraj);
+    
+    outPoseToRviz.header.stamp = msg->header.stamp;
+    outPoseToRviz.header.frame_id = "world";
+
+    outPoseToRviz.pose.position.x = selfPose.pose.pose.position.x;
+    outPoseToRviz.pose.position.y = -selfPose.pose.pose.position.y;
+    outPoseToRviz.pose.position.z = -selfPose.pose.pose.position.z; 
+
+    double yaw = atan2(outPose.velocity.y,outPose.velocity.x);
+    double t0 = std::cos(yaw * 0.5);
+    double t1 = std::sin(yaw * 0.5);
+    double t2 = std::cos(0 * 0.5);
+    double t3 = std::sin(0 * 0.5);
+    double t4 = std::cos(0 * 0.5);
+    double t5 = std::sin(0 * 0.5);
+
+    outPoseToRviz.pose.orientation.w = t0 * t2 * t4 + t1 * t3 * t5;
+    outPoseToRviz.pose.orientation.x = t0 * t3 * t4 - t1 * t2 * t5;
+    outPoseToRviz.pose.orientation.y = t0 * t2 * t5 + t1 * t3 * t4;
+    outPoseToRviz.pose.orientation.z = t1 * t2 * t4 - t0 * t3 * t5;        
+
+    outPoseRviz_pub.publish(outPoseToRviz);       
+    #endif     
+}
+
+void Planner::selfIMUCallback(const sensor_msgs::Imu::ConstPtr& msg)
+{
+  ///@TODO uncomment the lines below when necessary. For now it is all zero anyway.
+  selfIMUReading.header = msg->header;
+  selfIMUReading.orientation = msg->orientation;
+  selfIMUReading.angular_velocity = msg->angular_velocity;
+  //selfIMUReading.angular_velocity_covariance = msg->angular_velocity_covariance;
+  selfIMUReading.linear_acceleration = msg->linear_acceleration;  
+  //selfIMUReading.header_covariance = msg->linear_acceleration_covariance;
+}
+
+
+void Planner::reconf_callback(nmpc_planner::nmpcPlannerParamsConfig &config) //R:Dynamic Reconfigure?
+{
+  ROS_INFO("Reconfigure Request: repuGain = %f attractGain = %f safeNeighDist = %f  distToTarget = %f   copterDesiredHeightinNED = %f",config.tFormationRepulGain, config.tGoalAttractionGain,config.neighborDistThreshold, config.distanceThresholdToTarget, config.copterDesiredHeightinNED);   
+  
+  ROS_INFO("Reconfigure Request: INTERNAL_SUB_STEP = %f deltaT = %f",config.INTERNAL_SUB_STEP, config.deltaT);
+  
+  tFormationRepulGain=config.tFormationRepulGain;
+  
+  tGoalAttractionGain=config.tGoalAttractionGain;
+  
+  maxVelocityMagnitude = config.maxVelocityMagnitude;
+  
+  maxObstacleRepulsionForce = config.maxObstacleRepulsionForce;
+  
+  neighborDistThreshold=config.neighborDistThresholdSIM;
+    
+  distanceThresholdToTarget=config.distanceThresholdToTargetSIM;
+    
+  copterDesiredHeightinNED=config.copterDesiredHeightinNED_SIM;        
+  
+  INTERNAL_SUB_STEP=config.INTERNAL_SUB_STEP;
+
+  deltaT=config.deltaT; 
+}
+
+int main(int argc, char* argv[])
+{
+  
+  ros::init(argc, argv, "nmpc_planner");
+
+  if (argc < 3)
+    {
+      ROS_WARN("WARNING: you should specify i) selfID and ii) the number of robots in the team including self\n");
+      return 1;
+    }
+  else
+  {
+    ROS_INFO("nmpc_planner running for = %s using %s robots in the team including self",argv[1],argv[2]);
+  }
+      
+  ros::NodeHandle nh("~");  
+  Planner node(&nh,atoi(argv[1]),atoi(argv[2]));
+    
+  spin();
+  
+  return 0;  
+}

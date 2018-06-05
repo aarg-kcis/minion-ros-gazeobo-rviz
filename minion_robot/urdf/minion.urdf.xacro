@@ -41,7 +41,7 @@
   </xacro:macro>
 
   <xacro:macro name="wheel_link" params="id radius thickness color mass">
-    <link name="${id}">
+    <link name="${namespace}/${id}">
       <visual>
         <geometry>
           <cylinder length="${thickness}" radius="${radius}"/>
@@ -57,7 +57,7 @@
       </collision>
       <xacro:wheel_inertia mass="${wheel_mass}"/>
     </link>
-    <gazebo reference="${id}">
+    <gazebo reference="${namespace}/${id}">
       <mu1 value="200"/>
       <mu2 value="200"/>
       <kp value="10000000.0" />
@@ -70,8 +70,8 @@
 
   <xacro:macro name="wheel_joint" params="id child x y z">
    <joint name="${id}" type="continuous">
-     <parent link="base_link"/>
-     <child link="${child}"/>
+     <parent link="${namespace}/base_link"/>
+     <child link="${namespace}/${child}"/>
      <origin xyz="${x} ${y} ${z}"/>
      <axis xyz="0 1 0"/>
      <!--limit effort="0.13" velocity="621"/-->
@@ -91,7 +91,7 @@
   </transmission>
   </xacro:macro>
 
-  <link name="base_link">
+  <link name="${namespace}/base_link">
     <visual>
       <geometry>
         <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
@@ -112,11 +112,11 @@
         izz="${chassis_mass*chassis_length*chassis_length/12+chassis_mass*chassis_width*chassis_width/12}"/>
     </inertial>
   </link>
-  <gazebo reference="base_link">
+  <gazebo reference="${namespace}/base_link">
     <material>Gazebo/Orange</material>
   </gazebo>
 
-   <link name="castor">
+   <link name="${namespace}/castor">
     <visual>
       <geometry>
         <sphere radius="${wheel_radius}"/>
@@ -129,7 +129,7 @@
       </geometry>
     </collision>
   </link>
-  <gazebo reference="castor">
+  <gazebo reference="${namespace}/castor">
     <slip1 value="1"/>
     <slip2 value="1"/>
     <kp value="10000000.0" />
@@ -137,9 +137,9 @@
     <material>Gazebo/Grey</material>
   </gazebo>
 
-  <joint name="base_castor" type="fixed">
-     <parent link="base_link"/>
-     <child link="castor"/>
+  <joint name="${namespace}/base_castor" type="fixed">
+     <parent link="${namespace}/base_link"/>
+     <child link="${namespace}/castor"/>
      <origin xyz="${chassis_length/2-wheel_radius} 0 ${joint_height}"/>
   </joint>
 
@@ -157,6 +157,26 @@
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
     </plugin>
+    <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
+      <alwaysOn>true</alwaysOn>
+      <bodyName>${namespace}/base_link</bodyName>
+      <topicName>imu</topicName>
+      <serviceName>imu_service</serviceName>
+      <gaussianNoise>0.0</gaussianNoise>
+      <updateRate>20.0</updateRate>
+    </plugin>
+
+    <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>50.0</updateRate>
+      <bodyName>${namespace}/base_link</bodyName>
+      <topicName>ground_truth_pose</topicName>
+      <gaussianNoise>0.01</gaussianNoise>
+      <frameName>world</frameName>
+      <xyzOffsets>0 0 0</xyzOffsets>
+      <rpyOffsets>0 0 0</rpyOffsets>
+    </plugin>
+
   </gazebo>
 
 </robot>
