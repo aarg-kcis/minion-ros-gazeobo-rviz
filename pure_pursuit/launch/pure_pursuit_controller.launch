@@ -1,0 +1,11 @@
+<launch>
+  <arg name="robot_name" default="minion"/>
+  <arg name="roboID" default="0"/>
+  <arg name="namespace" value="$(arg robot_name)_$(arg roboID)" />
+  <!-- Relay Goal to ppc goal format -->
+  <node pkg="minion_robot" type="pure_pursuit_test.py" name="wayPoints_$(arg namespace)" args="$(arg robot_name) $(arg roboID)"/>
+  <!-- Pure Pursuit -->
+  <node pkg="pure_pursuit" type="pure_pursuit" name="pure_pursuit_controller_$(arg namespace)" args="$(arg roboID)"/>
+  <!-- PID -->
+  <!-- <node pkg="minion_robot" type="g2g.py" name="NH_g2g_$(arg namespace)" args="$(arg robot_name) $(arg roboID)"/> -->
+</launch>
