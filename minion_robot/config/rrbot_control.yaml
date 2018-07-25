@@ -1,0 +1,22 @@
+# rrbot:
+  # Publish all joint states -----------------------------------
+  # joint_state_controller:
+    # type: joint_state_controller/JointStateController
+    # publish_rate: 50  
+# 
+  # Position Controllers ---------------------------------------
+  # joint1_position_controller:
+type: effort_controllers/JointPositionController
+joint: base_piston_moving
+pid: {p: 300.0, i: 100.01, d: 10.0}
+has_position_limits: true
+min_position: 0.0
+max_position: 1.0
+has_velocity_limits: true
+max_velocity: 0.01
+has_acceleration_limits: true
+max_acceleration: 0.01
+has_jerk_limits: true
+max_jerk: 0.01
+has_effort_limits: true
+max_effort: 100.0

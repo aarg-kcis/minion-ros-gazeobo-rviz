@@ -1,0 +1,25 @@
+<!-- <launch>
+	<group ns="piston_slider">
+
+		<arg name="model" value="$(find minion_robot)/urdf/slider.urdf.xacro"/>
+		<arg name="namespace" value="piston" />
+
+		<param name="robot_description" command="$(find xacro)/xacro.py '$(arg model)'" />
+		<node name="spawn_$(arg namespace)" pkg="gazebo_ros" type="spawn_model"
+			args="-param robot_description
+			-urdf
+			-unpause
+			-model $(arg namespace)"
+			respawn="false" output="screen" >
+		</node>
+	</group>
+</launch>
+
+ -->
+<launch>
+<!-- Convert xacro and put on parameter server -->
+<param name="robot_description" command="$(find xacro)/xacro.py $(find minion_robot)/urdf/slider.urdf.xacro" />
+
+<!-- Spawn a robot into Gazebo -->
+<node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-param robot_description -urdf -model robot" />
+</launch>

@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/pulkit/Desktop/catkin_ws/src/minion-ros-gazeobo-rviz/Gazebo_Plugins/build/devel/setup.sh
