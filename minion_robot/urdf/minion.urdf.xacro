@@ -14,13 +14,13 @@
 
   <!-- Constants-->
   <xacro:property name="namespace"       value="$(arg namespace)" />
-  <xacro:property name="chassis_mass"    value="2" />
+  <xacro:property name="chassis_mass"    value="0.75" />
   <xacro:property name="chassis_length"  value="0.25" />
-  <xacro:property name="chassis_width"   value="0.2" />
+  <xacro:property name="chassis_width"   value="0.20" />
   <xacro:property name="chassis_height"  value="0.06" />
   <xacro:property name="battery_mass"    value="0.2" />
-  <xacro:property name="battery_length"  value="0.05" />
-  <xacro:property name="battery_width"   value="0.2" />
+  <xacro:property name="battery_length"  value="0.07" />
+  <xacro:property name="battery_width"   value="0.05" />
   <xacro:property name="battery_height"  value="0.05" />
   <xacro:property name="wheel_thickness" value="0.02" />
   <xacro:property name="wheel_mass"      value="0.1" />
@@ -31,7 +31,6 @@
   <xacro:property name="ID" value="0"/>
   <xacro:property name="wheel_radius" value="0.035"/>
   <xacro:property name="joint_height" value="0.025"/>
-
 
   <xacro:macro name="wheel_inertia" params="mass">
       <inertial>
@@ -58,10 +57,10 @@
       <xacro:wheel_inertia mass="${wheel_mass}"/>
     </link>
     <gazebo reference="${namespace}/${id}">
-      <mu1 value="200"/>
+      <mu value="200"/>
       <mu2 value="200"/>
-      <kp value="10000000.0" />
-      <kd value="1.0" />
+      <kp value="4000.0" />
+      <kd value="100.0" />
       <material>Gazebo/White</material>
 
     </gazebo>
@@ -78,6 +77,16 @@
      <!--safety_controller k_velocity="0.0002"/-->
    </joint>
   </xacro:macro>
+
+<transmission name="pt">
+    <type>transmission_interface/SimpleTransmission</type>
+    <actuator name="ptptpt">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+    <joint name="base_piston_moving">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+  </transmission>
 
  <xacro:macro name="wheel_joint_transmission" params="id">
   <transmission name="${id}_trans">
@@ -115,6 +124,104 @@
   <gazebo reference="${namespace}/base_link">
     <material>Gazebo/Orange</material>
   </gazebo>
+
+  <link name="${namespace}/piston_fixed">
+      <inertial>
+          <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+          <mass value="0.4"/> 
+      </inertial>
+      <collision name="collision">
+          <geometry>
+            <cylinder length="0.2" radius="0.03"/>
+          </geometry>
+      </collision>
+      <visual name="visual">
+          <geometry>
+            <cylinder length="0.2" radius="0.03"/>
+          </geometry>
+      </visual>
+  </link>
+
+  <gazebo reference="${namespace}/piston_fixed">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="${namespace}/base_piston_fixed" type="fixed">
+     <parent link="${namespace}/base_link"/>
+     <child link="${namespace}/piston_fixed"/>
+     <origin xyz="${-chassis_length/8} 0 ${chassis_height + 0.05}"/>
+  </joint>  
+
+  <link name="${namespace}/piston_moving">
+      <inertial>
+          <inertia ixx="0.001373" ixy="0" ixz="0" iyy="0.001373" iyz="0" izz="0.00008"/>
+          <mass value="0.4"/> 
+      </inertial>
+      <collision name="collision">
+          <geometry>
+            <cylinder length="0.20" radius="0.02"/>
+          </geometry>
+      </collision>
+      <visual name="visual">
+          <geometry>
+            <cylinder length="0.20" radius="0.02"/>
+          </geometry>
+      </visual>
+  </link>
+
+  <gazebo reference="${namespace}/piston_moving">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="base_piston_moving" type="prismatic">
+     <parent link="${namespace}/piston_fixed"/>
+     <child link="${namespace}/piston_moving"/>
+     <provide_feedback>true</provide_feedback>
+     <limit effort="100" lower="0" upper="10" velocity="0.01"/>
+     <origin xyz="0 0 ${chassis_height}"/>
+     <axis xyz="0 0 1"/>
+  </joint> 
+
+  <link name="${namespace}/piston_plate">
+      <collision name="collision">
+          <geometry>
+            <box size="0.15 0.1 0.01"/>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1000000</mu>
+                <mu2>1000000</mu2>
+                <kp value="1000" />
+                <kd value="1000" />
+                <slip1 value="1"/>
+                <slip2 value="1"/>
+              </ode>
+            </friction>
+          </surface>
+      </collision>
+      <visual name="visual">
+          <geometry>
+            <box size="0.15 0.1 0.01"/>
+          </geometry>
+
+      </visual>
+  </link>
+
+  <gazebo reference="${namespace}/piston_plate">
+    <!-- <material>Gazebo/Grey</material> -->
+    <!-- <mu value="200"/>
+    <mu2 value="200"/> -->
+    <!-- <kp value="10" /> -->
+    <!-- <kd value="80" /> -->
+    <material>Gazebo/Red</material>
+  </gazebo>
+
+  <joint name="${namespace}/base_piston_plate" type="fixed">
+     <parent link="${namespace}/piston_moving"/>
+     <child link="${namespace}/piston_plate"/>
+     <origin xyz="0 0 ${chassis_height + 0.04}"/>
+  </joint>  
 
    <link name="${namespace}/castor">
     <visual>
@@ -180,69 +287,3 @@
   </gazebo>
 
 </robot>
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
- <alwaysOn>true</alwaysOn>
- <updateRate>10</updateRate>
- <leftJoint>blw_1</leftJoint>
- <rightJoint>brw_1</rightJoint>
- <wheelSeparation>0.2</wheelSeparation>
- <wheelDiameter>0.07</wheelDiameter>
- <torque>1.4</torque>
- <commandTopic>cmd_vel</commandTopic>
- <odometryTopic>odom</odometryTopic>
- <odometryFrame>odom</odometryFrame>
- <robotBaseFrame>base_footprint</robotBaseFrame>
- <legacyMode>False</legacyMode>
- </plugin> -->
-
-<!--      <plugin name="actuator_plugin_1" filename="libminion_actuator.so">
-  <actuator>
-    <name>actuator_left</name>
-    <joint>blw_1</joint>
-    <index>0</index>
-    <type>electric_motor</type>
-    <power>5</power>
-    <max_velocity>15.7</max_velocity>
-    <max_torque>1.4</max_torque>
-  </actuator>
-</plugin> -->
-<!--      <plugin name="actuator_plugin_2" filename="libminion_actuator.so">
-  <actuator>
-    <name>actuator_right</name>
-    <joint>brw_1</joint>
-    <index>0</index>
-    <type>electric_motor</type>
-    <power>5</power>
-    <max_velocity>15.7</max_velocity>
-    <max_torque>1.4</max_torque>
-  </actuator>
-</plugin>     -->
-<!--     <plugin name="battery" filename="libminion_battery.so">
-    <ros_node>battery_monitor_client</ros_node>
-    <link_name>battery_link</link_name>
-    <battery_name>linear_battery</battery_name>
-    <constant_coef>12.694</constant_coef>
-    <linear_coef>-100.1424</linear_coef>
-    <initial_charge>1.1665</initial_charge>
-    <capacity>1.2009</capacity>
-    <resistance>0.061523</resistance>
-    <smooth_current_tau>1.9499</smooth_current_tau>
-    <charge_rate>0.2</charge_rate>
-</plugin>
-<plugin name="consumer" filename="libminion_battery_consumer.so">
-    <link_name>battery_link</link_name>
-    <battery_name>linear_battery</battery_name>
-    <power_load>6.6</power_load>
-</plugin>     -->

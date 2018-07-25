@@ -1,43 +1,50 @@
 <launch>
   <arg name="robot_name" default="minion"/>
   <arg name="world_name" default="empty_world"/>
-  <arg name="roboID" default="0"/>
+  <arg name="robotID" default="1"/>
   <arg name="x" default="0"/>
   <arg name="y" default="0"/>
+  <arg name="th" default="0"/>
+  <!-- <arg name="th" default="$(env THETA)"/> -->
   <arg name="z" default="0.1"/>
+  <!-- <arg name="model" value="/opt/ros/kinetic/share/turtlebot_description/robots/kobuki_hexagons_kinect.urdf.xacro"/> -->
   <arg name="model" value="$(find minion_robot)/urdf/minion.urdf.xacro"/>
-  <arg name="namespace" value="$(arg robot_name)_$(arg roboID)" />
+  <arg name="namespace" value="$(arg robot_name)_$(arg robotID)" />
 
 
-<group ns="/$(arg robot_name)_$(arg roboID)">
+<group ns="/$(arg robot_name)_$(arg robotID)">
+  <rosparam ns="effort_controllers" command="load"  file="$(find minion_robot)/config/rrbot_control.yaml" />
   <rosparam ns="joint_state_controller" command="load"  file="$(find minion_robot)/config/state_controller.yaml" />
   <rosparam ns="diff_drive_controller" command="load"  file="$(find minion_robot)/config/diff_drive_controller.yaml"/>
   <rosparam ns="diff_drive_controller" param="base_frame_id" subst_value="True">$(arg namespace)/base_link</rosparam>
   <rosparam ns="diff_drive_controller" param="odom_frame_id" subst_value="True">$(arg namespace)/wheel_odom</rosparam>
-  <param name="/$(arg robot_name)_$(arg roboID)/robot_description" command="$(find xacro)/xacro.py '$(arg model)' namespace:=$(arg robot_name)_$(arg roboID)" />
+  <param name="/$(arg robot_name)_$(arg robotID)/robot_description" command="$(find xacro)/xacro.py '$(arg model)' namespace:=$(arg robot_name)_$(arg robotID)" />
   <node name="spawn_$(arg namespace)" pkg="gazebo_ros" type="spawn_model"
     args="-param robot_description
           -urdf
           -x $(arg x)
           -y $(arg y)
           -z $(arg z)
-          -unpause
           -model $(arg namespace)"
     respawn="false" output="screen" >
   </node>
 
-  <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher_$(arg roboID)">
+  <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher_$(arg robotID)">
     <param name="publish_frequency" type="double" value="30.0" />
   </node>
-  <node name="$(arg robot_name)_$(arg roboID)_controller_spawner" pkg="controller_manager" type="spawner"
-    args="--namespace=/$(arg robot_name)_$(arg roboID)
+  <node name="$(arg robot_name)_$(arg robotID)_controller_spawner" pkg="controller_manager" type="spawner"
+    args="--namespace=/$(arg robot_name)_$(arg robotID)
+    effort_controllers
     joint_state_controller
     diff_drive_controller">
   </node>
+
+
+
   <node pkg="tf" type="static_transform_publisher" name="static_world_to_odom_publisher" args="$(arg x) $(arg y) 0 0 0 0 /world $(arg namespace)/wheel_odom 100"/>
   <!-- <node pkg="tf" type="static_transform_publisher" name="static_world_to_odom_publisher" args="$(arg x) $(arg y) 0 0 0 0 /world $(arg namespace)/base_link 100"/> -->
 </group>
-<node pkg="minion_robot" type="minion_ground_truth_tf_publisher.py" name="tf_gt_broadcaster_$(arg roboID)" args="$(arg robot_name) $(arg roboID)" />
-<!-- <node name="NH_$(arg roboID)" pkg="minion_robot" type="minion.py" args="$(arg robot_name) $(arg roboID)" output="screen"/> -->
+<node pkg="minion_robot" type="minion_ground_truth_tf_publisher.py" name="tf_gt_broadcaster_$(arg robotID)" args="$(arg robot_name) $(arg robotID)" />
+<!-- <node name="NH_$(arg robotID)" pkg="minion_robot" type="minion.py" args="$(arg robot_name) $(arg robotID)" output="screen"/> -->
 
 </launch>

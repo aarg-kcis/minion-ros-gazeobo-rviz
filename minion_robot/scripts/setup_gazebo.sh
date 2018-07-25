@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-ROBOS=$1
+ROBOS=$2
 
 # ROBOT_IDS="["
 # HUMAN_INPUT="[1"
@@ -28,12 +28,12 @@ date
 #roslaunch minion_robot gazebo.launch --screen &
 
 #sleep 3
-roslaunch random_moving_target spawn_target_withID.launch joyDevName:=0 directUseForFormation:=true --screen &
+#roslaunch random_moving_target spawn_target_withID.launch joyDevName:=0 directUseForFormation:=true --screen &
 for i in $(seq 0 $(($ROBOS-1))); do
   id=$(($i+1))
   roslaunch minion_robot minion_with_ID.launch roboID:=$id z:=0.1 x:=${Xs[$i]}  y:=${Ys[$i]} --screen & #spawn robot and low-level controller
   # roslaunch minion_robot g2g.launch roboID:=$id --screen &
-  roslaunch pure_pursuit pure_pursuit_controller.launch robot_name:=minion roboID:=$id --screen &                          #go to goal controller
+  #roslaunch pure_pursuit pure_pursuit_controller.launch robot_name:=minion roboID:=$id --screen &                          #go to goal controller
 done
 
 
