@@ -1,6 +1,6 @@
 #include "../include/nmpc_planner.h"
 
-void Planner::storeLatestTargetGTPose(const geometry_msgs::PoseStamped::ConstPtr& msg)
+void Planner::storeLatestTargetGTPose(const nav_msgs::Odometry::ConstPtr& msg)
 {
  if(!targetEstimationIsActive)   // when it is active, the callback storeLatestTargetEstimatedPose is used.
     targetObjectGTPose = *msg; // GT anyway comes in NED
@@ -22,8 +22,9 @@ void Planner::avoidTeamMates_byComputingExtForce(double sumOfGradients, int dire
 {
     selfPoseTraj.poses.clear();
     geometry_msgs::Pose tmpPose;
-    float xT =  targetObjectGTPose.pose.position.x;
-    float yT = -targetObjectGTPose.pose.position.y;
+    geometry_msgs::Pose2D tmpPose2D;
+    float xT =  targetObjectGTPose.pose.pose.position.x;
+    float yT = -targetObjectGTPose.pose.pose.position.y;
     int flag_weight = 0;
     float x_obs=0,y_obs=0,z_obs=0;
 
@@ -31,12 +32,12 @@ void Planner::avoidTeamMates_byComputingExtForce(double sumOfGradients, int dire
     {
         bool atLeastOneMatePresent = false;
 
-        Position3D tCurrentSelfPosition(selfPose.pose.pose.position.x,selfPose.pose.pose.position.y,0);
+        Position3D tCurrentSelfPosition(selfPose.x,selfPose.y,0);
 
         if(t==0)
         {
-            tCurrentSelfPosition(0) = selfPose.pose.pose.position.x;
-            tCurrentSelfPosition(1) = selfPose.pose.pose.position.y;
+            tCurrentSelfPosition(0) = selfPose.x;
+            tCurrentSelfPosition(1) = selfPose.y;
             tCurrentSelfPosition(2) = 0;
         }
 
@@ -45,11 +46,13 @@ void Planner::avoidTeamMates_byComputingExtForce(double sumOfGradients, int dire
             tCurrentSelfPosition(0) = StateInput(0,t);
             tCurrentSelfPosition(1) = StateInput(2,t);
             tCurrentSelfPosition(2) = 0;
-
             tmpPose.position.x = StateInput(0,t);
             tmpPose.position.y = StateInput(2,t);
             tmpPose.position.z = 0;
+            tmpPose2D.x = StateInput(0,t);
+            tmpPose2D.y = StateInput(2,t);
             selfPoseTraj.poses.push_back(tmpPose);
+            selfPoseTraj2OpenBase.push_back(tmpPose2D);
         }
 
         Position3D virtualPoint = tCurrentSelfPosition;
@@ -331,13 +334,14 @@ void Planner::updateObstaclesCallback(const geometry_msgs::PoseArray::ConstPtr& 
 }
 
 
-void Planner::matePoseCallback(const nav_msgs::Odometry::ConstPtr& msg, int robID)
+void Planner::matePoseCallback(const geometry_msgs::Pose2D::ConstPtr& msg, int robID)
 {
   //note that robID follows the 1-base, not zero base
   matePose = *msg;
-  matesPoses[robID-1] = *msg;
-  Position3D tCurrentSelfPosition(selfPose.pose.pose.position.x,selfPose.pose.pose.position.y,0);
-  Position3D tCurrentMatePosition(matePose.pose.pose.position.x,matePose.pose.pose.position.y,0);
+  matesPoses[robID-1].pose.pose.position.x = msg->x;
+  matesPoses[robID-1].pose.pose.position.y = msg->y;
+  Position3D tCurrentSelfPosition(selfPose.x,selfPose.y,0);
+  Position3D tCurrentMatePosition(matePose.x,matePose.y,0);
   // HACK TO SIMULATE COMMUNICATION RADIUS
   if ((tCurrentSelfPosition - tCurrentMatePosition).norm() <= neighborDistThreshold + 2)
   {
@@ -375,12 +379,12 @@ double Planner::quat2eul(nav_msgs::Odometry queryPose_)
     return selfYaw;
 }
 
-void Planner::selfPoseCallback(const nav_msgs::Odometry::ConstPtr& msg, int robID) //most important -- self nmpc
+void Planner::selfPoseCallback(const geometry_msgs::Pose2D::ConstPtr& msg, int robID) //most important -- self nmpc
 {
-    outPoseModifiedToRviz.header = msg->header;
-    outPoseModifiedToRviz.header.frame_id = "world";
-    outPoseToRviz.header = msg->header;
-    outPoseToRviz.header.frame_id = "world";
+    // outPoseModifiedToRviz.header = msg->header;
+    // outPoseModifiedToRviz.header.frame_id = "world";
+    // outPoseToRviz.header = msg->header;
+    // outPoseToRviz.header.frame_id = "world";
     selfPose = *msg;
 
     #ifdef USE_CVXGEN_1ROB
@@ -402,23 +406,23 @@ void Planner::selfPoseCallback(const nav_msgs::Odometry::ConstPtr& msg, int robI
 
     float r = distanceThresholdToTarget; // keep 2 m fro the target
     float x4,y4, vx4,vy4, x2,y2, x5,y5, x6,y6, x7,y7, theta, theta_, alpha, beta, gamma;
-    float x3 = targetObjectGTPose.pose.position.x + 0 * INTERNAL_SUB_STEP * targetObjectGTVelocity.pose.pose.position.x;
-    float y3 = -targetObjectGTPose.pose.position.y - 0 * INTERNAL_SUB_STEP * targetObjectGTVelocity.pose.pose.position.y;
+    float x3 = targetObjectGTPose.pose.pose.position.x + 0 * INTERNAL_SUB_STEP * targetObjectGTVelocity.pose.pose.position.x;
+    float y3 = -targetObjectGTPose.pose.pose.position.y - 0 * INTERNAL_SUB_STEP * targetObjectGTVelocity.pose.pose.position.y;
 
     tf::Quaternion q(
-        targetObjectGTPose.pose.orientation.x,
-        targetObjectGTPose.pose.orientation.y,
-        targetObjectGTPose.pose.orientation.z,
-        targetObjectGTPose.pose.orientation.w);
+        targetObjectGTPose.pose.pose.orientation.x,
+        targetObjectGTPose.pose.pose.orientation.y,
+        targetObjectGTPose.pose.pose.orientation.z,
+        targetObjectGTPose.pose.pose.orientation.w);
     tf::Matrix3x3 m(q);
     double target_roll, target_pitch, target_yaw;
     m.getRPY(target_roll, target_pitch, target_yaw);
 
-    float x1 = selfPose.pose.pose.position.x;
-    float y1 = selfPose.pose.pose.position.y;
+    float x1 = selfPose.x;
+    float y1 = selfPose.y;
     int flag, direction;
-    x2 = matePose.pose.pose.position.x;
-    y2 = matePose.pose.pose.position.y;
+    x2 = matePose.x;
+    y2 = matePose.y;
 
     if(useZeroAsFixedTarget)
     {
@@ -427,8 +431,8 @@ void Planner::selfPoseCallback(const nav_msgs::Odometry::ConstPtr& msg, int robI
     }
     else
     {
-      x3 = targetObjectGTPose.pose.position.x + 15 * HUMAN_SPEED * cos(target_yaw)* INTERNAL_SUB_STEP;
-      y3 = -targetObjectGTPose.pose.position.y - 15 * HUMAN_SPEED * sin(target_yaw)* INTERNAL_SUB_STEP;
+      x3 = targetObjectGTPose.pose.pose.position.x + 15 * HUMAN_SPEED * cos(target_yaw)* INTERNAL_SUB_STEP;
+      y3 = targetObjectGTPose.pose.pose.position.y - 15 * HUMAN_SPEED * sin(target_yaw)* INTERNAL_SUB_STEP;
     }
 
     if (abs(x3 - x3_prev) < 0.1 && abs(y3 - y3_prev) < 0.1)
@@ -534,18 +538,18 @@ void Planner::selfPoseCallback(const nav_msgs::Odometry::ConstPtr& msg, int robI
 
 
     // filling the current state
-    cur_state(0) = selfPose.pose.pose.position.x;
+    cur_state(0) = selfPose.x;
     cur_state(1) = 0; //********* Fill the right velocity fill the velocity later with another data type.. for now it is 0
-    cur_state(2) = selfPose.pose.pose.position.y;
+    cur_state(2) = selfPose.y;
     cur_state(3) = 0; // fill the velocity later with another data type.. for now it is 0
     cur_state(4) = 0;
     cur_state(5) = 0; // fill the velocity later with another data type.. for now it is 0
 
     //now the state limits
     state_limits(0,0) = -20;        state_limits(0,1) = 20;
-    state_limits(1,0) = -2;        state_limits(1,1) = 2;
+    state_limits(1,0) = -0.5;        state_limits(1,1) = 0.5;
     state_limits(2,0) = -20;        state_limits(2,1) = 20;
-    state_limits(3,0) = -2;        state_limits(3,1) = 2;
+    state_limits(3,0) = -0.5;        state_limits(3,1) = 0.5;
     state_limits(4,0) = 0;        state_limits(4,1) = 0;
     state_limits(5,0) = 0;         state_limits(5,1) = 0;
 
@@ -577,38 +581,20 @@ void Planner::selfPoseCallback(const nav_msgs::Odometry::ConstPtr& msg, int robI
     outPose.theta = theta;
     // outPose.velocity.y = -StateInput(3,15);
 
-    wayPoint.position.x = StateInput(0,15);
-    wayPoint.position.y = StateInput(2,15);
-    wayPoint.position.z = StateInput(4,15);
+    wayPoint.generic.target.x = StateInput(0,15);
+    wayPoint.generic.target.y = StateInput(2,15);
+    wayPoint.generic.frame = 3;
+    // wayPoint.bezier.targetTranslation = selfPoseTraj2OpenBase;
+    // wayPoint.bezier.step = 0.01;
+    // wayPoint.bezier.frame = 3;
 
 
-    selfPoseTraj.header = msg->header;
+    // selfPoseTraj.header = msg->header;
 
     pubOutPoseSelf_.publish(outPose);
     pubMatlabPoseSelf.publish(wayPoint);
     pubSelfPoseTraj_.publish(selfPoseTraj);
 
-    outPoseToRviz.header.stamp = msg->header.stamp;
-    outPoseToRviz.header.frame_id = "world";
-
-    outPoseToRviz.pose.position.x = selfPose.pose.pose.position.x;
-    outPoseToRviz.pose.position.y = selfPose.pose.pose.position.y;
-    outPoseToRviz.pose.position.z = selfPose.pose.pose.position.z;
-
-    double yaw = atan2(outPose.y,outPose.x);
-    double t0 = std::cos(yaw * 0.5);
-    double t1 = std::sin(yaw * 0.5);
-    double t2 = std::cos(0 * 0.5);
-    double t3 = std::sin(0 * 0.5);
-    double t4 = std::cos(0 * 0.5);
-    double t5 = std::sin(0 * 0.5);
-
-    outPoseToRviz.pose.orientation.w = t0 * t2 * t4 + t1 * t3 * t5;
-    outPoseToRviz.pose.orientation.x = t0 * t3 * t4 - t1 * t2 * t5;
-    outPoseToRviz.pose.orientation.y = t0 * t2 * t5 + t1 * t3 * t4;
-    outPoseToRviz.pose.orientation.z = t1 * t2 * t4 - t0 * t3 * t5;
-
-    outPoseRviz_pub.publish(outPoseToRviz);
     #endif
 }
 
@@ -649,7 +635,6 @@ void Planner::reconf_callback(minion_nmpc_planner::nmpcPlannerParamsConfig &conf
 
 int main(int argc, char* argv[])
 {
-
   ros::init(argc, argv, "nmpc_planner");
 
   if (argc < 3)
@@ -664,7 +649,6 @@ int main(int argc, char* argv[])
 
   ros::NodeHandle nh("~");
   Planner node(&nh,atoi(argv[1]),atoi(argv[2]));
-
   spin();
 
   return 0;

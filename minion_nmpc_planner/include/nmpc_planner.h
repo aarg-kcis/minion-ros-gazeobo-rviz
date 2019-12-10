@@ -10,7 +10,9 @@
 #include <std_msgs/Int8.h>
 #include <std_msgs/Float32.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <open_base/Movement.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Vector3.h>
@@ -120,12 +122,13 @@ class Planner
   Publisher pubMatlabPoseSelf;
   Publisher pubSelfPoseTraj_;
 
-  nav_msgs::Odometry selfPose;
+  geometry_msgs::Pose2D selfPose;
   geometry_msgs::PoseArray selfPoseTraj;
-  geometry_msgs::PoseStamped targetObjectGTPose;
+  std::vector<geometry_msgs::Pose2D> selfPoseTraj2OpenBase;
+  nav_msgs::Odometry targetObjectGTPose;
   geometry_msgs::PoseWithCovarianceStamped targetObjectGTVelocity;
   sensor_msgs::Imu selfIMUReading;
-  nav_msgs::Odometry matePose;
+  geometry_msgs::Pose2D matePose;
   bool heardFromMate;
 
   // make a list of mate poses and pose trajectories. The position of a mate in the list is ID-1 (recall ID has base 0)
@@ -135,7 +138,7 @@ class Planner
   vector<bool> heardFromMateTrajs;
 
   turtlesim::Pose outPose;
-  geometry_msgs::Pose wayPoint;
+  open_base::Movement wayPoint;
 
   Vector3D ExtForce;
 
@@ -244,12 +247,12 @@ class Planner
 
       pubOutPoseSelf_ = nh->advertise<turtlesim::Pose>(outputPoseTopic+boost::lexical_cast<string>(selfID_),100);
       //R
-      pubMatlabPoseSelf = nh->advertise<geometry_msgs::Pose>("/matlab_Waypoint_"+boost::lexical_cast<string>(selfID_),100);
+      pubMatlabPoseSelf = nh->advertise<open_base::Movement>("/open_base_"+boost::lexical_cast<string>(selfID_)+"/command",100);
       //EndR
 
       pubSelfPoseTraj_ = nh->advertise<geometry_msgs::PoseArray>(robotPoseTrajTopic+boost::lexical_cast<string>(selfID_)+robotPoseTrajTopicSuffix,1000);
 
-      subSelfPose_ = nh->subscribe<nav_msgs::Odometry>(robotPoseTopic+boost::lexical_cast<string>(selfID_)+robotPoseTopicSuffix, 1000, boost::bind(&Planner::selfPoseCallback,this, _1,selfID_));
+      subSelfPose_ = nh->subscribe<geometry_msgs::Pose2D>(robotPoseTopic+boost::lexical_cast<string>(selfID_)+robotPoseTopicSuffix, 1000, boost::bind(&Planner::selfPoseCallback,this, _1,selfID_));
 
 
       subSelfObstacles_ = nh->subscribe<geometry_msgs::PoseArray>(obstacleTopicBase, 1000, boost::bind(&Planner::updateObstaclesCallback,this, _1,selfID_));
@@ -257,7 +260,7 @@ class Planner
 
       subSelfIMU_ =  nh->subscribe<sensor_msgs::Imu>(robotSelfIMUTopic, 1000, boost::bind(&Planner::selfIMUCallback,this, _1));
 
-      subObjectGT_ = nh->subscribe<geometry_msgs::PoseStamped>(objectGTTopic, 100,boost::bind(&Planner::storeLatestTargetGTPose,this,_1));
+      subObjectGT_ = nh->subscribe<nav_msgs::Odometry>(objectGTTopic, 100,boost::bind(&Planner::storeLatestTargetGTPose,this,_1));
 
       for(int i=1; i<=numRobots; i++)
       {
@@ -268,7 +271,7 @@ class Planner
         {
           ROS_INFO("Called pose subscriber for robot %d",i);
 
-          Subscriber subMatePose = nh->subscribe<nav_msgs::Odometry>(robotPoseTopic+boost::lexical_cast<string>(i)+robotPoseTopicSuffix, 100, boost::bind(&Planner::matePoseCallback,this, _1,i));
+          Subscriber subMatePose = nh->subscribe<geometry_msgs::Pose2D>(robotPoseTopic+boost::lexical_cast<string>(i)+robotPoseTopicSuffix, 100, boost::bind(&Planner::matePoseCallback,this, _1,i));
           subMatePose_[i-1] = subMatePose;
 
           Subscriber subMatePoseTraj = nh->subscribe<geometry_msgs::PoseArray>(robotPoseTrajTopic+boost::lexical_cast<string>(i)+robotPoseTrajTopicSuffix, 100, boost::bind(&Planner::matePoseTrajectoryCallback,this, _1,i));    	            subMatePoseTraj_[i-1] = subMatePoseTraj;
@@ -286,13 +289,13 @@ class Planner
    }
     void reconf_callback(minion_nmpc_planner::nmpcPlannerParamsConfig&);
 
-    void selfPoseCallback(const nav_msgs::Odometry::ConstPtr&, int);
+    void selfPoseCallback(const geometry_msgs::Pose2D::ConstPtr&, int);
 
-    void matePoseCallback(const nav_msgs::Odometry::ConstPtr&, int);
+    void matePoseCallback(const geometry_msgs::Pose2D::ConstPtr&, int);
 
     void matePoseTrajectoryCallback(const geometry_msgs::PoseArray::ConstPtr&, int);
 
-    void storeLatestTargetGTPose(const geometry_msgs::PoseStamped::ConstPtr&);
+    void storeLatestTargetGTPose(const nav_msgs::Odometry::ConstPtr&);
 
     void updateObstaclesCallback(const geometry_msgs::PoseArray::ConstPtr&, int);
 

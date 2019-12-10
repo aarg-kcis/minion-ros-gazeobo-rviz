@@ -6,21 +6,18 @@ SET (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../CMakeModules)
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  nav_msgs
   roscpp
   rospy
 )
-
-
 
 include_directories(${GAZEBO_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
 
 add_library(actor_custom SHARED ActorPlugin.cc)
-add_library(minion_actuator SHARED ActuatorPlugin.cc)
 
 target_link_libraries(
 actor_custom ${GAZEBO_LIBRARIES}
-minion_actuator ${GAZEBO_LIBRARIES}
 ${catkin_LIBRARIES}
 )
