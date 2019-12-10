@@ -39,7 +39,7 @@
 #include <CoTanPotentialFunctions.hpp>
 
 #include <dynamic_reconfigure/server.h>
-#include <nmpc_planner/nmpcPlannerParamsConfig.h>
+#include <minion_nmpc_planner/nmpcPlannerParamsConfig.h>
 
 
 
@@ -90,7 +90,7 @@ typedef Eigen::Vector4d Vector4D;
 class Planner
 {
 
-  dynamic_reconfigure::Server<nmpc_planner::nmpcPlannerParamsConfig>  dynamicServer_;
+  dynamic_reconfigure::Server<minion_nmpc_planner::nmpcPlannerParamsConfig>  dynamicServer_;
 
   NodeHandle *nh;
 
@@ -230,7 +230,7 @@ class Planner
       nh->getParam("distanceThresholdToTarget", distanceThresholdToTarget);
 
       // Bind dynamic reconfigure callback
-      dynamic_reconfigure::Server<nmpc_planner::nmpcPlannerParamsConfig>::CallbackType  callback;
+      dynamic_reconfigure::Server<minion_nmpc_planner::nmpcPlannerParamsConfig>::CallbackType  callback;
       callback = boost::bind(&Planner::reconf_callback, this, _1);
       dynamicServer_.setCallback(callback);
 
@@ -284,7 +284,7 @@ class Planner
       ROS_INFO("Constructor is done");
 
    }
-    void reconf_callback(nmpc_planner::nmpcPlannerParamsConfig&);
+    void reconf_callback(minion_nmpc_planner::nmpcPlannerParamsConfig&);
 
     void selfPoseCallback(const nav_msgs::Odometry::ConstPtr&, int);
 

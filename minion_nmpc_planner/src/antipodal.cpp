@@ -616,7 +616,7 @@ void Planner::selfIMUCallback(const sensor_msgs::Imu::ConstPtr& msg)
   //selfIMUReading.header_covariance = msg->linear_acceleration_covariance;
 }
 
-void Planner::reconf_callback(nmpc_planner::nmpcPlannerParamsConfig &config) //R:Dynamic Reconfigure?
+void Planner::reconf_callback(minion_nmpc_planner::nmpcPlannerParamsConfig &config) //R:Dynamic Reconfigure?
 {
   ROS_INFO("Reconfigure Request: repuGain = %f attractGain = %f safeNeighDist = %f  distToTarget = %f   copterDesiredHeightinNED = %f",config.tFormationRepulGain, config.tGoalAttractionGain,config.neighborDistThreshold, config.distanceThresholdToTarget, config.copterDesiredHeightinNED);
 
