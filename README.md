@@ -5,7 +5,7 @@ Screenshots:
 
 # 4 wheeled Minons
 A four wheeled model of minion is available in the `four-wheel` branch.
-<img src="minon_robot/images/fourwheel.jpg">
+<img src="minion_robot/images/fourwheel.jpg">
 
 # Battery Plugin: Clone into catkin workspace src
 
