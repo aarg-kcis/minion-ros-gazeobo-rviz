@@ -66,8 +66,3 @@ cd catkin_ws/src/minion_robot/scripts
 ./cleanup.sh
 ```
 For limits on the input velocity: Check diff_drive_controller.yaml Tutorials followed : http://wiki.ros.org/urdf/Tutorials,  http://gazebosim.org/tutorials
-
-
-
-
-![sc_4rV573DWFpIPk3u0N2xA (1)](https://user-images.githubusercontent.com/14311538/76163974-cf472880-6170-11ea-9d3f-36ec08b1a464.png)
