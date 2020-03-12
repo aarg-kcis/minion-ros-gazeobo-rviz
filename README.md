@@ -4,7 +4,7 @@ Screenshots:
 <img src="minion_robot/images/1.jpg" width="23%"></img> <img src="minion_robot/images/2.jpg" width="23%"></img> <img src="minion_robot/images/3.jpg" width="23%"></img> <img src="minion_robot/images/4.jpg" width="23%"></img> 
 
 # 4 wheeled Minons
-A four wheeled model of minion is available at https://github.com/aarg-kcis/Minion2_payload
+A four wheeled model of minion is available at https://github.com/aarg-kcis/Minion2_payload_level_gazebo
 <img src="minion_robot/images/fourwheel.jpg">
 
 # Battery Plugin: Clone into catkin workspace src
